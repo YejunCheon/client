@@ -1,6 +1,5 @@
-import AuthScreen from "@/components/auth/AuthScreen";
-import ProductListScreen from "@/components/product/ProductListScreen";
+import LandingPage from "@/components/home/LandingPage";
 
 export default function Home() {
-  return <ProductListScreen />;
+  return <LandingPage />;
 }

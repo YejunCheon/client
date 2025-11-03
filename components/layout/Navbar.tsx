@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 
 const imgLogo = "/assets/2bef342664b11de04b2130dfa1c435984d5241b1.svg";
 const imgVectorStroke = "/assets/c76b9efec1aaf6868b3f07b078748d9f98bef3d9.svg";
@@ -27,13 +28,18 @@ export default function Navbar() {
           <img alt="DealChain" className="h-[65px] w-[115px]" src={imgLogo} />
         </div>
         <div className="relative w-full max-w-[601px]">
-          <div className="h-[50px] w-full rounded-md border border-[#2487f8]" />
-          <p className="pointer-events-none absolute left-[15px] top-[12px] text-[18px] leading-[26px] text-[#767676]">
-            기계식 키보드
-          </p>
+          <input
+            type="text"
+            placeholder="기계식 키보드"
+            className="h-[50px] w-full rounded-md border border-[#2487f8] pl-[15px] pr-[45px] text-[18px] leading-[26px] text-[#222] placeholder:text-[#767676] outline-none"
+          />
           <IconSearch className="pointer-events-none absolute right-[13px] top-[13px] size-[24px]" />
         </div>
-        <nav className="flex items-center gap-8 text-[18px] text-[#222]"><a>Home</a><a>내 계약서</a><a>진행중인 거래</a></nav>
+        <nav className="flex items-center gap-8 text-[18px] text-[#222]">
+          <Link href="/" className="hover:font-bold transition-all cursor-pointer">Home</Link>
+          <Link href="/contracts" className="hover:font-bold transition-all cursor-pointer">내 계약서</Link>
+          <Link href="/chats" className="hover:font-bold transition-all cursor-pointer">진행중인 거래</Link>
+        </nav>
       </div>
     </header>
   );
