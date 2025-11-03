@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 40, "column": 0}, "map": {"version":3,"sources":["file:///Users/cheon-yejun/Documents/%E1%84%80%E1%85%A2%E1%84%87%E1%85%A1%E1%86%AF/deal_chain/client/app/test/route.ts"],"sourcesContent":["export async function GET() {\n  return Response.json({ ok: true, service: \"client\", backend: \"offline-safe\" }, { status: 200 });\n}\n\n\n"],"names":[],"mappings":";;;;AAAO,eAAe;IACpB,OAAO,SAAS,IAAI,CAAC;QAAE,IAAI;QAAM,SAAS;QAAU,SAAS;IAAe,GAAG;QAAE,QAAQ;IAAI;AAC/F","debugId":null}}]
-}
