@@ -32,7 +32,7 @@ export default function Navbar() {
           {/* 모바일 네비게이션 */}
           <nav className="flex items-center gap-4 md:hidden text-[16px] md:text-[18px] text-[#222]">
             <Link href="/" className="hover:font-bold transition-all cursor-pointer whitespace-nowrap">Home</Link>
-            <Link href="/contracts" className="hover:font-bold transition-all cursor-pointer whitespace-nowrap">내 계약서</Link>
+            <Link href="/contracts/list" className="hover:font-bold transition-all cursor-pointer whitespace-nowrap">내 계약서</Link>
             <Link href="/chats" className="hover:font-bold transition-all cursor-pointer whitespace-nowrap">진행중인 거래</Link>
           </nav>
         </div>
@@ -50,7 +50,7 @@ export default function Navbar() {
         {/* 데스크탑 네비게이션 */}
         <nav className="hidden md:flex items-center gap-8 text-[18px] text-[#222] order-2 md:order-3">
           <Link href="/" className="hover:font-bold transition-all cursor-pointer">Home</Link>
-          <Link href="/contracts" className="hover:font-bold transition-all cursor-pointer">내 계약서</Link>
+          <Link href="/contracts/list" className="hover:font-bold transition-all cursor-pointer">내 계약서</Link>
           <Link href="/chats" className="hover:font-bold transition-all cursor-pointer">진행중인 거래</Link>
         </nav>
       </div>
