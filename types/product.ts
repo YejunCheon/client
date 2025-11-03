@@ -1,29 +1,46 @@
 export interface Product {
-  id: string;
+  id: number;
   productName: string;
-  title?: string;
-  price: number;
+  title: string;
   description: string;
+  price: string;
   productImage: string;
-  memberId: string;
+  memberId: number;
 }
 
-export interface ProductListResponse {
-  product: Product[];
-  success: boolean;
-  count?: number;
-}
-
-export interface ProductResponse {
-  product: Product;
-  success: boolean;
+export interface CreateProductPayload {
+  productName: string;
+  price: string;
+  description: string;
+  productImage: File | string;
+  title: string;
 }
 
 export interface CreateProductResponse {
-  productImage: string;
-  productId: string;
   success: boolean;
   message: string;
   productName: string;
+  productId: number;
+  productImage: string;
 }
 
+export interface DeleteProductResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ProductResponse {
+  success: boolean;
+  product: Product;
+}
+
+export interface ProductListResponse {
+  success: boolean;
+  count: number;
+  product: Product[];
+}
+
+export interface MemberProductResponse {
+  success: boolean;
+  product: Product[];
+}
