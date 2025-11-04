@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { User, Lock, UserCircle, FileImage, Phone, PenTool } from "lucide-react";
 import { SignaturePadModal } from "@/components/signature/SignaturePadModal";
+import { SignaturePreview } from "@/components/signature/SignaturePreview";
 
 interface AuthScreenProps {
   initialMode?: "login" | "signup";
@@ -344,9 +345,21 @@ export default function AuthScreen({ initialMode = "login", returnUrl }: AuthScr
                     </Button>
                   </div>
                   {signupData.signatureImage && (
-                    <p className="text-xs text-[#717182]">
-                      선택된 파일: {signupData.signatureImage.name}
-                    </p>
+                    <div className="mt-2">
+                      <p className="text-xs text-[#717182] mb-2">
+                        선택된 파일: {signupData.signatureImage.name}
+                      </p>
+                      <SignaturePreview
+                        signatureImage={signupData.signatureImage}
+                        onRemove={() => {
+                          setSignupData((prev) => ({ ...prev, signatureImage: null }));
+                          setError(null);
+                        }}
+                        width="100%"
+                        height={200}
+                        className="border border-[#dedede]"
+                      />
+                    </div>
                   )}
                 </div>
               </>
