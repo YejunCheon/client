@@ -10,14 +10,14 @@ export const handlers = [
       count: mockContracts.length,
     });
   }),
-  http.get('*/products', () => {
+  http.get('*/api/product/list', () => {
     return HttpResponse.json({
       product: mockProducts,
       success: true,
       count: mockProducts.length,
     });
   }),
-  http.get<PathParams<never>, { productId: string }>('*/products/:productId', ({ params }) => {
+  http.get('*/api/product/:productId', ({ params }) => {
     const { productId } = params;
     const product = mockProducts.find((p) => p.id === Number(productId));
 
