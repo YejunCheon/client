@@ -2,6 +2,8 @@
 
 import React, { useRef, useState, ChangeEvent, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { SignaturePadModal } from '@/components/signature/SignaturePadModal';
+import { PenTool } from 'lucide-react';
 
 interface ContractSignSectionProps {
   signatureImage?: string | File | null;
@@ -22,6 +24,7 @@ export function ContractSignSection({
   const [preview, setPreview] = useState<string | null>(
     typeof signatureImage === 'string' ? signatureImage : null
   );
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
 
   useEffect(() => {
     if (signatureImage instanceof File) {
@@ -67,6 +70,16 @@ export function ContractSignSection({
       fileInputRef.current.value = '';
     }
     onSignatureRemove?.();
+  };
+
+  const handleSignatureFromModal = (file: File) => {
+    // 미리보기 생성
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    onSignatureUpload?.(file);
   };
 
   const displayImage = preview || (typeof signatureImage === 'string' ? signatureImage : null);
@@ -128,49 +141,73 @@ export function ContractSignSection({
             <p className="text-[18px] font-bold leading-[26px] text-[#222222]">
               자필 서명 등록
             </p>
-            <div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/jpg"
-                onChange={handleFileSelect}
-                className="hidden"
-                id="signature-upload"
-              />
-              <label
-                htmlFor="signature-upload"
+            <div className="flex flex-col gap-2">
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="signature-upload"
+                />
+                <label
+                  htmlFor="signature-upload"
+                  className={cn(
+                    'bg-[#f2f2f2] border border-[#dedede] rounded-[16px]',
+                    'px-[26px] py-[27px]',
+                    'flex flex-col gap-[10px] items-center justify-center',
+                    'cursor-pointer hover:bg-[#e8e8e8] transition-colors',
+                    'min-h-[103px]'
+                  )}
+                >
+                  <div className="flex flex-col gap-[5px] items-center justify-center">
+                    {/* Image Icon */}
+                    <svg
+                      width="27"
+                      height="27"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="text-[#767676]"
+                    >
+                      <path
+                        d="M9 2C7.89 2 7 2.89 7 4V20C7 21.11 7.89 22 9 22H15C16.11 22 17 21.11 17 20V4C17 2.89 16.11 2 15 2H9ZM9 4H15V20H9V4ZM11 6V8H13V6H11ZM11 10V12H13V10H11ZM11 14V16H13V14H11Z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                    <p className="text-[12px] leading-[16px] text-[#767676] text-center">
+                      5mb 이내 .png .jpg
+                    </p>
+                  </div>
+                </label>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSignatureModalOpen(true)}
                 className={cn(
-                  'bg-[#f2f2f2] border border-[#dedede] rounded-[16px]',
-                  'px-[26px] py-[27px]',
-                  'flex flex-col gap-[10px] items-center justify-center',
-                  'cursor-pointer hover:bg-[#e8e8e8] transition-colors',
-                  'min-h-[103px]'
+                  'bg-white border border-[#2487f8] rounded-[16px]',
+                  'px-4 py-3',
+                  'flex items-center justify-center gap-2',
+                  'cursor-pointer hover:bg-[#f0f7ff] transition-colors',
+                  'text-[#2487f8] font-semibold'
                 )}
               >
-                <div className="flex flex-col gap-[5px] items-center justify-center">
-                  {/* Image Icon */}
-                  <svg
-                    width="27"
-                    height="27"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="text-[#767676]"
-                  >
-                    <path
-                      d="M9 2C7.89 2 7 2.89 7 4V20C7 21.11 7.89 22 9 22H15C16.11 22 17 21.11 17 20V4C17 2.89 16.11 2 15 2H9ZM9 4H15V20H9V4ZM11 6V8H13V6H11ZM11 10V12H13V10H11ZM11 14V16H13V14H11Z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  <p className="text-[12px] leading-[16px] text-[#767676] text-center">
-                    5mb 이내 .png .jpg
-                  </p>
-                </div>
-              </label>
+                <PenTool className="w-5 h-5" />
+                <span>직접 서명하기</span>
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Signature Pad Modal */}
+      <SignaturePadModal
+        isOpen={isSignatureModalOpen}
+        onClose={() => setIsSignatureModalOpen(false)}
+        onSave={handleSignatureFromModal}
+        title="서명하기"
+      />
     </div>
   );
 }
