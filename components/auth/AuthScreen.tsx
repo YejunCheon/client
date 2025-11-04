@@ -6,7 +6,8 @@ import { login, register } from "@/lib/auth-api";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Lock, UserCircle, FileImage, Phone } from "lucide-react";
+import { User, Lock, UserCircle, FileImage, Phone, PenTool } from "lucide-react";
+import { SignaturePadModal } from "@/components/signature/SignaturePadModal";
 
 interface AuthScreenProps {
   initialMode?: "login" | "signup";
@@ -17,6 +18,7 @@ export default function AuthScreen({ initialMode = "login", returnUrl }: AuthScr
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   
   const [loginData, setLoginData] = useState({
     name: "",
@@ -52,6 +54,11 @@ export default function AuthScreen({ initialMode = "login", returnUrl }: AuthScr
       setSignupData((prev) => ({ ...prev, signatureImage: file }));
       setError(null);
     }
+  };
+
+  const handleSignatureFromModal = (file: File) => {
+    setSignupData((prev) => ({ ...prev, signatureImage: file }));
+    setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,7 +105,7 @@ export default function AuthScreen({ initialMode = "login", returnUrl }: AuthScr
         }
 
         if (!signupData.signatureImage) {
-          setError("서명 이미지를 업로드해주세요.");
+          setError("서명 이미지를 업로드하거나 직접 서명해주세요.");
           setIsLoading(false);
           return;
         }
@@ -315,16 +322,26 @@ export default function AuthScreen({ initialMode = "login", returnUrl }: AuthScr
                   <label className="font-medium text-[14px] text-neutral-950">
                     서명 이미지
                   </label>
-                  <div className="relative">
-                    <FileImage className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#717182] pointer-events-none" />
-                    <Input
-                      name="signatureImage"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      required
-                      className="pl-10 bg-[#f3f3f5] border-0 h-9 cursor-pointer"
-                    />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <FileImage className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#717182] pointer-events-none" />
+                      <Input
+                        name="signatureImage"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="pl-10 bg-[#f3f3f5] border-0 h-9 cursor-pointer"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => setIsSignatureModalOpen(true)}
+                      variant="outline"
+                      className="h-9 px-4 flex items-center gap-2 whitespace-nowrap"
+                    >
+                      <PenTool className="size-4" />
+                      직접 서명하기
+                    </Button>
                   </div>
                   {signupData.signatureImage && (
                     <p className="text-xs text-[#717182]">
@@ -345,6 +362,14 @@ export default function AuthScreen({ initialMode = "login", returnUrl }: AuthScr
           </form>
         </div>
       </div>
+
+      {/* Signature Pad Modal */}
+      <SignaturePadModal
+        isOpen={isSignatureModalOpen}
+        onClose={() => setIsSignatureModalOpen(false)}
+        onSave={handleSignatureFromModal}
+        title="서명하기"
+      />
     </div>
   );
 }
