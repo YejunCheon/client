@@ -19,9 +19,9 @@ export async function register(
   // signatureImage가 File이면 FormData로 전송, string이면 JSON으로 전송
   if (request.signatureImage instanceof File) {
     const formData = new FormData();
+    formData.append('username', request.username);
+    formData.append('password', request.password);
     formData.append('name', request.name);
-    formData.append('residentNumber', request.residentNumber);
-    formData.append('phoneNumber', request.phoneNumber);
     formData.append('signatureImage', request.signatureImage);
 
     return apiClient.postMultipart<RegisterResponse>(
@@ -30,9 +30,9 @@ export async function register(
     );
   } else {
     return apiClient.post<RegisterResponse>('/api/members/register', {
+      username: request.username,
+      password: request.password,
       name: request.name,
-      residentNumber: request.residentNumber,
-      phoneNumber: request.phoneNumber,
       signatureImage: request.signatureImage,
     });
   }

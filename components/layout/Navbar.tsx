@@ -2,6 +2,9 @@
 
 import React from "react";
 import Link from "next/link";
+import { useAuthStore } from "@/lib/store/auth";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 const imgLogo = "/assets/2bef342664b11de04b2130dfa1c435984d5241b1.svg";
 const imgVectorStroke = "/assets/c76b9efec1aaf6868b3f07b078748d9f98bef3d9.svg";
@@ -21,14 +24,22 @@ function IconSearch({ className }: { className?: string }) {
 }
 
 export default function Navbar() {
+  const { user, isAuthenticated, logout } = useAuthStore();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/");
+  };
+
   return (
     <header className="w-full border-b border-blue-500/40">
       <div className="mx-auto w-full max-w-[1512px] flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6 px-5 py-4">
         {/* 첫 번째 줄: 로고 + 네비게이션 (모바일) / 로고 (데스크탑) */}
         <div className="flex items-center justify-between md:justify-start gap-4 md:gap-6">
-          <div className="h-[65px] w-[115px] flex-shrink-0">
+          <Link href="/" className="h-[65px] w-[115px] flex-shrink-0">
             <img alt="DealChain" className="h-[65px] w-[115px]" src={imgLogo} />
-          </div>
+          </Link>
           {/* 모바일 네비게이션 */}
           <nav className="flex items-center gap-4 md:hidden text-[16px] md:text-[18px] text-[#222]">
             <Link href="/" className="hover:font-bold transition-all cursor-pointer whitespace-nowrap">Home</Link>
@@ -47,12 +58,66 @@ export default function Navbar() {
           <IconSearch className="pointer-events-none absolute right-[13px] top-[13px] size-[24px]" />
         </div>
         
-        {/* 데스크탑 네비게이션 */}
-        <nav className="hidden md:flex items-center gap-8 text-[18px] text-[#222] order-2 md:order-3">
-          <Link href="/" className="hover:font-bold transition-all cursor-pointer">Home</Link>
-          <Link href="/contracts/list" className="hover:font-bold transition-all cursor-pointer">내 계약서</Link>
-          <Link href="/chats" className="hover:font-bold transition-all cursor-pointer">진행중인 거래</Link>
-        </nav>
+        {/* 데스크탑 네비게이션 + 인증 상태 */}
+        <div className="hidden md:flex items-center gap-6 text-[18px] text-[#222] order-2 md:order-3">
+          <nav className="flex items-center gap-8">
+            <Link href="/" className="hover:font-bold transition-all cursor-pointer">Home</Link>
+            <Link href="/contracts/list" className="hover:font-bold transition-all cursor-pointer">내 계약서</Link>
+            <Link href="/chats" className="hover:font-bold transition-all cursor-pointer">진행중인 거래</Link>
+          </nav>
+          
+          {/* 인증 상태에 따른 UI */}
+          {isAuthenticated && user ? (
+            <div className="flex items-center gap-4 ml-4 pl-4 border-l border-[#e0e0e0]">
+              <span className="text-[16px] font-medium text-[#222]">{user.name}님</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="text-[14px]"
+              >
+                로그아웃
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center ml-4 pl-4 border-l border-[#e0e0e0]">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => router.push("/auth")}
+                className="text-[14px] bg-[#030213] text-white hover:bg-[#030213]/90"
+              >
+                로그인/회원가입
+              </Button>
+            </div>
+          )}
+        </div>
+        
+        {/* 모바일 인증 상태 */}
+        <div className="flex md:hidden items-center gap-3 order-4">
+          {isAuthenticated && user ? (
+            <>
+              <span className="text-[14px] font-medium text-[#222]">{user.name}님</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="text-[12px]"
+              >
+                로그아웃
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => router.push("/auth")}
+              className="text-[12px] bg-[#030213] text-white hover:bg-[#030213]/90"
+            >
+              로그인/회원가입
+            </Button>
+          )}
+        </div>
       </div>
     </header>
   );

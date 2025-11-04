@@ -18,9 +18,9 @@ export interface Member {
 
 // 회원가입 요청
 export interface RegisterRequest {
+  username: string;
+  password: string;
   name: string;
-  residentNumber: string;
-  phoneNumber: string;
   signatureImage: File | string; // File은 FormData로 전송, string은 이미 업로드된 경로
 }
 
@@ -35,9 +35,8 @@ export interface RegisterResponse {
 
 // 로그인 요청
 export interface LoginRequest {
-  name: string;
-  residentNumber: string;
-  phoneNumber: string;
+  username: string;
+  password: string;
 }
 
 // 로그인 응답

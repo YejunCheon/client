@@ -5,6 +5,7 @@ import { ChatPreview, ChatProgressStatus } from "@/types";
 import { ChatListCard } from "@/components/chat/ChatListCard";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useAuthGuard } from "@/hooks/use-auth-guard";
 
 const mockChatRooms: ChatPreview[] = [
   {
@@ -67,8 +68,13 @@ const filters = [
 type FilterId = (typeof filters)[number]["id"];
 
 export default function ChatsPage() {
+  const { isAuthenticated } = useAuthGuard();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterId>(filters[0].id);
+
+  if (!isAuthenticated) {
+    return null; // 리다이렉트 중
+  }
 
   const filteredChats = useMemo(() => {
     const normalizedKeyword = searchTerm.trim().toLowerCase();

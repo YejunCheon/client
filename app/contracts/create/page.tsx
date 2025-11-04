@@ -6,9 +6,11 @@ import { ContractSummarySection } from '@/components/contract/ContractSummarySec
 import { ContractSignSection } from '@/components/contract/ContractSignSection';
 import { Button } from '@/components/ui/button';
 import { useContractCreate } from '@/hooks/use-contract-create';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Send } from 'lucide-react';
 
 export default function ContractCreatePage() {
+  const { isAuthenticated } = useAuthGuard();
   const {
     formData,
     summary,
@@ -28,11 +30,16 @@ export default function ContractCreatePage() {
 
   // 페이지 로드 시 임시 저장된 데이터 불러오기
   useEffect(() => {
+    if (!isAuthenticated) return;
     const hasDraft = loadDraft();
     if (hasDraft) {
       // 사용자에게 불러올지 물어볼 수도 있음
     }
-  }, [loadDraft]);
+  }, [loadDraft, isAuthenticated]);
+
+  if (!isAuthenticated) {
+    return null; // 리다이렉트 중
+  }
 
   const handleSaveDraft = async () => {
     try {
