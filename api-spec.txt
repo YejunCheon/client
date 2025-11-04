@@ -1,0 +1,152 @@
+API 명세서 (현재 코드 기준)
+
+[공통]
+- 인증 방식
+  - REST: HttpOnly 쿠키 `token`(우선) 또는 Authorization: Bearer <JWT>
+  - WebSocket: STOMP CONNECT 시 Authorization: Bearer <JWT> 또는 token 헤더
+- 응답 형식: JSON(파일/바이트 응답 제외)
+- 인증 실패: 401 {"success": false, "message": "인증이 필요합니다."}
+- 세션: STATELESS
+- Anonymous 인증: 비활성화됨
+
+[회원 API] /api/members
+1) POST /api/members/register
+   - 인증: 불필요
+   - 요청(multipart/form-data)
+     - name (string, required)
+     - residentNumber (string, required)
+     - phoneNumber (string, required)
+     - signatureImage (file, required)
+   - 응답: { success, message, memberId, name, signatureImage }
+
+2) POST /api/members/login
+   - 인증: 불필요
+   - 요청(application/json)
+     - { name, residentNumber, phoneNumber }
+   - 동작: JWT 발급 → HttpOnly 쿠키 token 설정
+   - 응답: { success, message, memberId, name }
+
+3) POST /api/members/logout
+   - 인증: 불필요
+   - 동작: HttpOnly 쿠키 token 삭제
+   - 응답: { success, message }
+
+4) GET /api/members/{id}
+   - 인증: 필요
+   - 응답: { success, member: { id, name, residentNumber, phoneNumber, signatureImage } }
+
+5) GET /api/members/signature/{memberId}
+   - 인증: 필요
+   - 응답: 이미지 바이트 (Content-Type 원본 유지)
+
+[상품 API] /api/products
+1) POST /api/products/create
+   - 인증: 필요
+   - 요청(multipart/form-data + @ModelAttribute)
+     - ProductRegisterRequestDto: productName, title, price, description
+     - productImage (file, optional)
+   - 응답: { success, message, productId, productName, productImage, title }
+
+2) DELETE /api/products/{productId}
+   - 인증: 필요
+   - 응답: { success, message }
+
+3) GET /api/products/{productId}
+   - 인증: 필요
+   - 응답: { success, product: { id, productName, price, title, description, memberId, productImage } }
+
+4) GET /api/products/list
+   - 인증: 필요
+   - 응답: { success, products: [...], count }
+
+5) GET /api/products/member/{memberId}
+   - 인증: 필요
+   - 응답: { success, products: [...], count }
+
+[계약서 API] /api/contracts
+1) POST /api/contracts/sign
+   - 인증: 필요
+   - 요청(application/json, SignRequestDto)
+     - roomId (string, required)
+     - productId (long, required)
+     - deviceInfo (string, optional)
+   - 동작: 토큰 userId가 방의 seller/buyer인지 확인 후 서명 처리
+   - 응답: ContractResponseDto { isSuccess, data, isBothSign? }
+
+2) POST /api/contracts/upload
+   - 인증: 필요
+   - 요청(multipart/form-data)
+     - pdf (file, required)
+     - sellerId (long, optional)
+     - buyerId (long, optional)
+     - roomId (string, optional)
+   - 응답: { success, message, contractId, filePath, sellerId, buyerId, roomId, encryptedHash }
+
+3) GET /api/contracts/{id}
+   - 인증: 필요
+   - 응답: PDF 바이트 (Content-Type: application/pdf, Content-Disposition: attachment)
+
+4) POST /api/contracts/create
+   - 인증: 필요
+   - 요청(application/json, ContractCreateRequestDto)
+     - roomId (string, required)
+     - sellerId (long, required)
+     - buyerId (long, required)
+     - deviceInfo (string, optional)
+   - 동작: roomId 대화내역 + 상품정보로 AI 계약서 JSON 생성, 서명 테이블 초기화
+   - 응답: ContractResponseDto { isSuccess, data: aiContractJson }
+
+5) PUT /api/contracts/{id}
+   // 수정 필요
+
+6) DELETE /api/contracts/{id}
+   - 인증: 필요
+   - 응답: { success, message, contractId }
+
+[채팅 REST API] /api/chat
+1) POST /api/chat/createroom
+   - 인증: 필요
+   - 요청(application/json, ChatRoomRequestDto)
+     - seller (long, required)
+     - buyer (long, required)
+     - productId (long, required)
+   - 동작: 동일 조합 방 존재 시 기존 roomId 반환
+   - 응답: ChatRoomResponseDto { roomId, isSuccess, reason? }
+
+2) POST /api/chat/getmessages
+   - 인증: 필요
+   - 요청(application/json, ChatMessageRequestDto)
+     - 방 조회에 필요한 식별 정보(구현에 따라 seller/buyer 또는 roomId)
+   - 응답: ChatMessageRessponseDto { roomId, messages: [{ messageId, senderId, content, timestamp }], success }
+
+3) POST /api/chat/getchatrooms
+   - 인증: 필요
+   - 요청(application/json, ChatRoomUserRequestDto)
+     - userId (long, required)
+   - 제약: 토큰 userId와 요청 userId가 동일해야 함
+   - 응답: ChatRoomListResponseDto { rooms: [{ roomId, sellerId, buyerId, productId }], success, message? }
+
+[WebSocket]
+- 엔드포인트: /ws (SockJS 사용)
+  - 허용 Origin: http://localhost:*, http://127.0.0.1:*
+- 인증: STOMP CONNECT 시
+  - Authorization: Bearer <JWT> 또는 token 헤더 필수
+  - 유효하지 않으면 연결 거부
+- 라우팅
+  - 발행: /pub/** (예: /pub/chat/message)
+  - 구독: /sub/** (예: /sub/chat/room/{roomId})
+- 보안 제약
+  - 메시지 발신자(senderId)는 해당 방의 seller/buyer 중 하나여야 하며 Principal(ID)와 동일해야 함
+
+[보안 정책 요약]
+- 허용(permitAll)
+  - /api/members/register, /api/members/login, /api/members/logout
+  - /static/**, /uploads/**
+  - /ws/**
+- 인증 필요(authenticated)
+  - /api/members/** (위 3개 제외 전부)
+  - /api/products/create, /api/products/{id}, /api/products/{id}/**, /api/products/list, /api/products/member/**
+  - /api/contracts/**
+  - /api/chat/**
+- 기타: 인증 필요
+

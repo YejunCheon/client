@@ -6,7 +6,7 @@ import { login, register } from "@/lib/auth-api";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Lock, UserCircle, FileImage } from "lucide-react";
+import { User, Lock, UserCircle, FileImage, Phone } from "lucide-react";
 
 interface AuthScreenProps {
   initialMode?: "login" | "signup";
@@ -19,15 +19,15 @@ export default function AuthScreen({ initialMode = "login", returnUrl }: AuthScr
   const [error, setError] = useState<string | null>(null);
   
   const [loginData, setLoginData] = useState({
-    username: "",
-    password: "",
+    name: "",
+    residentNumber: "",
+    phoneNumber: "",
   });
 
   const [signupData, setSignupData] = useState({
-    username: "",
-    password: "",
-    confirmPassword: "",
     name: "",
+    residentNumber: "",
+    phoneNumber: "",
     signatureImage: null as File | null,
   });
 
@@ -62,27 +62,28 @@ export default function AuthScreen({ initialMode = "login", returnUrl }: AuthScr
     try {
       if (mode === "login") {
         // 로그인
-        if (!loginData.username || !loginData.password) {
-          setError("아이디와 비밀번호를 입력해주세요.");
+        if (!loginData.name || !loginData.residentNumber || !loginData.phoneNumber) {
+          setError("모든 필드를 입력해주세요.");
           setIsLoading(false);
           return;
         }
 
         const response = await login({
-          username: loginData.username,
-          password: loginData.password,
+          name: loginData.name,
+          residentNumber: loginData.residentNumber,
+          phoneNumber: loginData.phoneNumber,
         });
 
         if (response.success) {
-          // 임시 토큰 생성 (실제로는 서버에서 받아와야 함)
-          const token = `temp_token_${Date.now()}`;
-          // 유저 정보 생성
+          // JWT는 HttpOnly 쿠키로 설정되므로 클라이언트에서 직접 저장하지 않음
+          // 유저 정보만 저장
           const user = {
             id: response.memberId.toString(),
             name: response.name,
             verified: false,
           };
-          setAuth(user, token);
+          // 토큰은 서버에서 HttpOnly 쿠키로 설정되므로 빈 문자열이나 더미 값 사용
+          setAuth(user, "");
           // returnUrl이 있으면 원래 페이지로, 없으면 홈으로
           router.push(returnUrl || "/");
         } else {
@@ -90,14 +91,8 @@ export default function AuthScreen({ initialMode = "login", returnUrl }: AuthScr
         }
       } else {
         // 회원가입
-        if (!signupData.username || !signupData.password || !signupData.confirmPassword || !signupData.name) {
+        if (!signupData.name || !signupData.residentNumber || !signupData.phoneNumber) {
           setError("모든 필드를 입력해주세요.");
-          setIsLoading(false);
-          return;
-        }
-
-        if (signupData.password !== signupData.confirmPassword) {
-          setError("비밀번호가 일치하지 않습니다.");
           setIsLoading(false);
           return;
         }
@@ -109,21 +104,21 @@ export default function AuthScreen({ initialMode = "login", returnUrl }: AuthScr
         }
 
         const response = await register({
-          username: signupData.username,
-          password: signupData.password,
           name: signupData.name,
+          residentNumber: signupData.residentNumber,
+          phoneNumber: signupData.phoneNumber,
           signatureImage: signupData.signatureImage,
         });
 
         if (response.success) {
           // 회원가입 성공 후 자동 로그인
-          const token = `temp_token_${Date.now()}`;
           const user = {
             id: response.memberId.toString(),
             name: response.name,
             verified: false,
           };
-          setAuth(user, token);
+          // 회원가입 후 자동 로그인 처리 (서버에서 쿠키 설정)
+          setAuth(user, "");
           // returnUrl이 있으면 원래 페이지로, 없으면 홈으로
           router.push(returnUrl || "/");
         } else {
@@ -207,16 +202,16 @@ export default function AuthScreen({ initialMode = "login", returnUrl }: AuthScr
                 {/* 로그인 폼 */}
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[14px] text-neutral-950">
-                    아이디
+                    이름
                   </label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#717182]" />
+                    <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#717182]" />
                     <Input
-                      name="username"
+                      name="name"
                       type="text"
-                      value={loginData.username}
+                      value={loginData.name}
                       onChange={handleLoginInputChange}
-                      placeholder="아이디를 입력하세요"
+                      placeholder="이름을 입력하세요"
                       required
                       className="pl-10 bg-[#f3f3f5] border-0 h-9"
                     />
@@ -225,16 +220,34 @@ export default function AuthScreen({ initialMode = "login", returnUrl }: AuthScr
 
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[14px] text-neutral-950">
-                    비밀번호
+                    주민등록번호
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#717182]" />
                     <Input
-                      name="password"
-                      type="password"
-                      value={loginData.password}
+                      name="residentNumber"
+                      type="text"
+                      value={loginData.residentNumber}
                       onChange={handleLoginInputChange}
-                      placeholder="비밀번호를 입력하세요"
+                      placeholder="주민등록번호를 입력하세요"
+                      required
+                      className="pl-10 bg-[#f3f3f5] border-0 h-9"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="font-medium text-[14px] text-neutral-950">
+                    전화번호
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#717182]" />
+                    <Input
+                      name="phoneNumber"
+                      type="tel"
+                      value={loginData.phoneNumber}
+                      onChange={handleLoginInputChange}
+                      placeholder="전화번호를 입력하세요"
                       required
                       className="pl-10 bg-[#f3f3f5] border-0 h-9"
                     />
@@ -244,60 +257,6 @@ export default function AuthScreen({ initialMode = "login", returnUrl }: AuthScr
             ) : (
               <>
                 {/* 회원가입 폼 */}
-                <div className="flex flex-col gap-2">
-                  <label className="font-medium text-[14px] text-neutral-950">
-                    아이디
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#717182]" />
-                    <Input
-                      name="username"
-                      type="text"
-                      value={signupData.username}
-                      onChange={handleSignupInputChange}
-                      placeholder="아이디를 입력하세요"
-                      required
-                      className="pl-10 bg-[#f3f3f5] border-0 h-9"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="font-medium text-[14px] text-neutral-950">
-                    비밀번호
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#717182]" />
-                    <Input
-                      name="password"
-                      type="password"
-                      value={signupData.password}
-                      onChange={handleSignupInputChange}
-                      placeholder="비밀번호를 입력하세요"
-                      required
-                      className="pl-10 bg-[#f3f3f5] border-0 h-9"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="font-medium text-[14px] text-neutral-950">
-                    비밀번호 확인
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#717182]" />
-                    <Input
-                      name="confirmPassword"
-                      type="password"
-                      value={signupData.confirmPassword}
-                      onChange={handleSignupInputChange}
-                      placeholder="비밀번호를 다시 입력하세요"
-                      required
-                      className="pl-10 bg-[#f3f3f5] border-0 h-9"
-                    />
-                  </div>
-                </div>
-
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[14px] text-neutral-950">
                     이름
@@ -310,6 +269,42 @@ export default function AuthScreen({ initialMode = "login", returnUrl }: AuthScr
                       value={signupData.name}
                       onChange={handleSignupInputChange}
                       placeholder="이름을 입력하세요"
+                      required
+                      className="pl-10 bg-[#f3f3f5] border-0 h-9"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="font-medium text-[14px] text-neutral-950">
+                    주민등록번호
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#717182]" />
+                    <Input
+                      name="residentNumber"
+                      type="text"
+                      value={signupData.residentNumber}
+                      onChange={handleSignupInputChange}
+                      placeholder="주민등록번호를 입력하세요"
+                      required
+                      className="pl-10 bg-[#f3f3f5] border-0 h-9"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="font-medium text-[14px] text-neutral-950">
+                    전화번호
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#717182]" />
+                    <Input
+                      name="phoneNumber"
+                      type="tel"
+                      value={signupData.phoneNumber}
+                      onChange={handleSignupInputChange}
+                      placeholder="전화번호를 입력하세요"
                       required
                       className="pl-10 bg-[#f3f3f5] border-0 h-9"
                     />
