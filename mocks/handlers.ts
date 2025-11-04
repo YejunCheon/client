@@ -1,5 +1,6 @@
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse, type PathParams } from 'msw';
 import { mockContracts } from './data/contracts';
+import { mockProducts } from './data/products';
 
 export const handlers = [
   http.get('*/contracts', () => {
@@ -8,5 +9,25 @@ export const handlers = [
       success: true,
       count: mockContracts.length,
     });
+  }),
+  http.get('*/api/product/list', () => {
+    return HttpResponse.json({
+      product: mockProducts,
+      success: true,
+      count: mockProducts.length,
+    });
+  }),
+  http.get('*/api/product/:productId', ({ params }) => {
+    const { productId } = params;
+    const product = mockProducts.find((p) => p.id === Number(productId));
+
+    if (product) {
+      return HttpResponse.json({
+        product,
+        success: true,
+      });
+    }
+
+    return new HttpResponse(null, { status: 404 });
   }),
 ];
