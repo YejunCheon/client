@@ -106,7 +106,9 @@ export interface ContractListItem {
   id: string;
   roomId?: string;
   sellerId: string;
+  sellerName?: string | null;
   buyerId: string;
+  buyerName?: string | null;
   productId?: string;
   summary?: string;
   status: ContractStatus;
@@ -119,4 +121,3 @@ export interface ContractListResponse {
   message?: string;
   count?: number;
 }
-
