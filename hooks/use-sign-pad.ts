@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 
 interface Point {
   x: number;
@@ -9,8 +9,33 @@ export function useSignPad() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
+  const lastPointRef = useRef<Point | null>(null);
 
-  const startDrawing = (event: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  const getPoint = useCallback((
+    event: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>,
+    rect: DOMRect
+  ): Point => {
+    let clientX: number;
+    let clientY: number;
+
+    if ('touches' in event) {
+      const touch = event.touches[0] || event.changedTouches[0];
+      if (!touch) return { x: 0, y: 0 };
+      clientX = touch.clientX;
+      clientY = touch.clientY;
+    } else {
+      clientX = event.clientX;
+      clientY = event.clientY;
+    }
+
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    };
+  }, []);
+
+  const startDrawing = useCallback((event: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    event.preventDefault();
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -18,17 +43,19 @@ export function useSignPad() {
     if (!ctx) return;
 
     setIsDrawing(true);
-    setHasSignature(false);
 
     const rect = canvas.getBoundingClientRect();
     const point = getPoint(event, rect);
+    lastPointRef.current = point;
 
     ctx.beginPath();
     ctx.moveTo(point.x, point.y);
-  };
+  }, [getPoint]);
 
-  const draw = (event: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  const draw = useCallback((event: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
+    
+    event.preventDefault();
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -37,18 +64,40 @@ export function useSignPad() {
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
-    const point = getPoint(event, rect);
+    const currentPoint = getPoint(event, rect);
 
-    ctx.lineTo(point.x, point.y);
-    ctx.stroke();
+    // 컨텍스트 스타일 확인 및 재설정
+    if (ctx.strokeStyle !== '#000000') {
+      ctx.strokeStyle = '#000000';
+    }
+    if (ctx.lineWidth !== 3) {
+      ctx.lineWidth = 3;
+    }
+    if (ctx.lineCap !== 'round') {
+      ctx.lineCap = 'round';
+    }
+    if (ctx.lineJoin !== 'round') {
+      ctx.lineJoin = 'round';
+    }
+
+    // 이전 점이 있으면 이전 점에서 현재 점까지 선 그리기
+    if (lastPointRef.current) {
+      ctx.beginPath();
+      ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y);
+      ctx.lineTo(currentPoint.x, currentPoint.y);
+      ctx.stroke();
+    }
+
+    lastPointRef.current = currentPoint;
     setHasSignature(true);
-  };
+  }, [isDrawing, getPoint]);
 
-  const stopDrawing = () => {
+  const stopDrawing = useCallback(() => {
     setIsDrawing(false);
-  };
+    lastPointRef.current = null;
+  }, []);
 
-  const clear = () => {
+  const clear = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -57,16 +106,17 @@ export function useSignPad() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     setHasSignature(false);
-  };
+    lastPointRef.current = null;
+  }, []);
 
-  const toDataURL = (format: 'image/png' | 'image/jpeg' = 'image/png'): string => {
+  const toDataURL = useCallback((format: 'image/png' | 'image/jpeg' = 'image/png'): string => {
     const canvas = canvasRef.current;
     if (!canvas) return '';
 
     return canvas.toDataURL(format);
-  };
+  }, []);
 
-  const toBlob = (): Promise<Blob | null> => {
+  const toBlob = useCallback((): Promise<Blob | null> => {
     return new Promise((resolve) => {
       const canvas = canvasRef.current;
       if (!canvas) {
@@ -76,32 +126,31 @@ export function useSignPad() {
 
       canvas.toBlob(resolve, 'image/png');
     });
-  };
+  }, []);
 
-  const getPoint = (
-    event: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>,
-    rect: DOMRect
-  ): Point => {
-    if ('touches' in event) {
-      return {
-        x: event.touches[0].clientX - rect.left,
-        y: event.touches[0].clientY - rect.top,
-      };
-    } else {
-      return {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top,
-      };
-    }
-  };
-
-  const setCanvasSize = (width: number, height: number) => {
+  const setCanvasSize = useCallback((width: number, height: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // 캔버스 실제 크기 설정
     canvas.width = width;
     canvas.height = height;
-  };
+    
+    // 스타일 설정 (화면 표시 크기)
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+
+    // 컨텍스트 스타일 설정
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, width, height);
+  }, []);
 
   return {
     canvasRef,
@@ -116,4 +165,3 @@ export function useSignPad() {
     setCanvasSize,
   };
 }
-
