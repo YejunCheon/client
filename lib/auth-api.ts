@@ -58,10 +58,7 @@ export async function getSignatureImage(memberId: number): Promise<Blob> {
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/members/signature/${memberId}`,
     {
-      credentials: 'include',
-      headers: {
-        Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') : ''}`,
-      },
+      credentials: 'include', // HttpOnly 쿠키 자동 포함
     }
   );
   

@@ -1,8 +1,15 @@
 "use client";
 
 import React from "react";
+import { useAuthGuard } from "@/hooks/use-auth-guard";
 
 export default function ContractsPage() {
+  const { isAuthenticated } = useAuthGuard();
+
+  if (!isAuthenticated) {
+    return null; // 리다이렉트 중
+  }
+
   return (
     <div className="w-full py-10">
       <div className="mx-auto max-w-[1512px] px-5">

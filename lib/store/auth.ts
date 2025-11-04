@@ -8,41 +8,48 @@ interface AuthState {
   setUser: (user: User | null) => void;
   setToken: (token: string) => void;
   login: (user: User, token: string) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
-  token: null,
+  token: null, // HttpOnly 쿠키로 관리되므로 클라이언트에서는 null로 유지
   setUser: (user) => set({ user, isAuthenticated: !!user }),
-  setToken: (token) => set({ token }),
+  setToken: (token) => set({ token }), // 사용하지 않지만 하위 호환성을 위해 유지
   login: (user, token) => {
-    set({ user, token, isAuthenticated: true });
-    // localStorage에도 저장
+    // JWT는 HttpOnly 쿠키로 서버에서 관리되므로 클라이언트에서는 유저 정보만 저장
+    set({ user, token: null, isAuthenticated: true });
+    // 유저 정보만 localStorage에 저장 (선택사항)
     if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', token);
       localStorage.setItem('auth_user', JSON.stringify(user));
     }
   },
-  logout: () => {
+  logout: async () => {
+    // 서버에 로그아웃 요청 (HttpOnly 쿠키 삭제)
+    try {
+      const { logout: logoutApi } = await import('@/lib/auth-api');
+      await logoutApi();
+    } catch (e) {
+      console.error('Logout API call failed:', e);
+    }
+    // 클라이언트 상태 초기화
     set({ user: null, token: null, isAuthenticated: false });
     // localStorage에서 제거
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
     }
   },
 }));
 
-// localStorage에서 초기 상태 복원
+// localStorage에서 초기 상태 복원 (유저 정보만)
 if (typeof window !== 'undefined') {
-  const token = localStorage.getItem('auth_token');
   const userStr = localStorage.getItem('auth_user');
-  if (token && userStr) {
+  if (userStr) {
     try {
       const user = JSON.parse(userStr);
-      useAuthStore.setState({ user, token, isAuthenticated: true });
+      // 토큰은 HttpOnly 쿠키로 관리되므로 null로 설정
+      useAuthStore.setState({ user, token: null, isAuthenticated: true });
     } catch (e) {
       console.error('Failed to restore auth state:', e);
     }
