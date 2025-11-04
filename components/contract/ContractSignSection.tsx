@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useRef, useState, ChangeEvent, useEffect } from 'react';
+import React, { useRef, useState, ChangeEvent } from 'react';
 import { cn } from '@/lib/utils';
 import { SignaturePadModal } from '@/components/signature/SignaturePadModal';
+import { SignaturePreview } from '@/components/signature/SignaturePreview';
 import { PenTool } from 'lucide-react';
 
 interface ContractSignSectionProps {
@@ -21,22 +22,7 @@ export function ContractSignSection({
   className,
 }: ContractSignSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(
-    typeof signatureImage === 'string' ? signatureImage : null
-  );
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
-
-  useEffect(() => {
-    if (signatureImage instanceof File) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-      };
-      reader.readAsDataURL(signatureImage);
-    } else if (typeof signatureImage === 'string') {
-      setPreview(signatureImage);
-    }
-  }, [signatureImage]);
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -54,18 +40,10 @@ export function ContractSignSection({
       return;
     }
 
-    // 미리보기 생성
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-
     onSignatureUpload?.(file);
   };
 
   const handleRemove = () => {
-    setPreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -73,16 +51,8 @@ export function ContractSignSection({
   };
 
   const handleSignatureFromModal = (file: File) => {
-    // 미리보기 생성
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
     onSignatureUpload?.(file);
   };
-
-  const displayImage = preview || (typeof signatureImage === 'string' ? signatureImage : null);
 
   return (
     <div
@@ -97,30 +67,14 @@ export function ContractSignSection({
 
       <div className="flex-1 flex gap-[11px] items-start">
         {/* Signature Image Preview */}
-        <div className="w-[299px] h-[349px] relative flex-shrink-0 bg-white rounded-lg overflow-hidden border border-[#dedede]">
-          {displayImage ? (
-            <>
-              <img
-                src={displayImage}
-                alt="서명 이미지"
-                className="w-full h-full object-contain"
-              />
-              {onSignatureRemove && (
-                <button
-                  onClick={handleRemove}
-                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
-                  type="button"
-                >
-                  ×
-                </button>
-              )}
-            </>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-[#767676] text-sm">
-              서명 이미지 미리보기
-            </div>
-          )}
-        </div>
+        <SignaturePreview
+          signatureImage={signatureImage}
+          onRemove={onSignatureRemove ? handleRemove : undefined}
+          width={299}
+          height={349}
+          emptyMessage="서명 이미지 미리보기"
+          showRemoveButton={!!onSignatureRemove}
+        />
 
         {/* Signature Upload Form */}
         <div className="flex-1 flex flex-col gap-[42px]">
