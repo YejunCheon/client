@@ -148,28 +148,32 @@ export function useChatPreviews(userId: string | null) {
         return [];
       }
       const response = await api.chat.getRooms({ userId });
-      return response.rooms ?? [];
+      // response.rooms가 배열인지 확인하고, 아니면 빈 배열 반환
+      const rooms = response?.rooms;
+      return Array.isArray(rooms) ? rooms : [];
     },
     enabled: Boolean(userId),
     staleTime: 60 * 1000,
   });
 
+  // chatRoomsQuery.data가 배열인지 확인
+  const rooms = Array.isArray(chatRoomsQuery.data) ? chatRoomsQuery.data : [];
+
   const previewsQuery = useQuery({
     queryKey: [
       "chatRoomPreviews",
       userId,
-      chatRoomsQuery.data?.map((room) => room.roomId) ?? [],
+      rooms.map((room) => room.roomId),
     ],
     queryFn: async () => {
       if (!userId) {
         return [];
       }
-      const rooms = chatRoomsQuery.data ?? [];
       return Promise.all(
         rooms.map((room) => resolveChatPreview(room, userId))
       );
     },
-    enabled: Boolean(userId) && Boolean(chatRoomsQuery.data?.length),
+    enabled: Boolean(userId) && rooms.length > 0,
     staleTime: 30 * 1000,
   });
 
@@ -179,7 +183,7 @@ export function useChatPreviews(userId: string | null) {
   );
 
   return {
-    rooms: chatRoomsQuery.data ?? [],
+    rooms: Array.isArray(chatRoomsQuery.data) ? chatRoomsQuery.data : [],
     isRoomsLoading: chatRoomsQuery.isLoading,
     isRoomsFetching: chatRoomsQuery.isFetching,
     previews,
