@@ -8,6 +8,8 @@ export const mockChatRooms: ChatRoom[] = [
     productId: 1,
     createdAt: '2024-07-30T09:00:00Z',
     updatedAt: '2024-07-30T10:00:00Z',
+    lastMessage: '상태 아주 좋습니다. 거의 새 제품이에요.',
+    lastMessageTime: '2024-07-30T09:03:00Z',
   },
   {
     roomId: 'room-456',
@@ -16,6 +18,8 @@ export const mockChatRooms: ChatRoom[] = [
     productId: 2,
     createdAt: '2024-07-29T13:20:00Z',
     updatedAt: '2024-07-29T14:40:00Z',
+    lastMessage: '네, 택배 가능해요. 배송비 포함입니다.',
+    lastMessageTime: '2024-07-29T13:27:30Z',
   },
 ];
 

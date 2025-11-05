@@ -37,7 +37,11 @@ export interface ChatRoomRequest {
 
 export interface ChatRoomResponse {
   roomId: string;
-  isSuccess: boolean;
+  sellerId?: number | string;
+  buyerId?: number | string;
+  productId?: number | string;
+  createdAt?: string;
+  isSuccess?: boolean;
   reason?: string;
   created?: boolean;
 }
@@ -51,9 +55,9 @@ export interface ChatMessagesRequest {
 }
 
 export interface ChatMessagesResponse {
-  roomId: string;
+  roomId?: string;
   messages: ChatMessage[];
-  success: boolean;
+  success?: boolean;
 }
 
 export interface ChatRoom {
@@ -63,11 +67,13 @@ export interface ChatRoom {
   productId: number;
   createdAt?: string;
   updatedAt?: string;
+  lastMessage?: string;
+  lastMessageTime?: string;
 }
 
 export interface ChatRoomListResponse {
   rooms: ChatRoom[];
-  success: boolean;
+  success?: boolean;
   message?: string;
 }
 

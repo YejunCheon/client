@@ -1,13 +1,19 @@
-import { http, HttpResponse, type PathParams } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { mockContracts } from './data/contracts';
 import { mockProducts } from './data/products';
 
 export const handlers = [
-  http.get('*/api/contracts', () => {
+  http.get('*/api/contracts/contractLists', ({ request }) => {
+    const url = new URL(request.url);
+    const roomId = url.searchParams.get('roomId');
+    const contracts = roomId
+      ? mockContracts.filter((contract) => contract.roomId === roomId)
+      : mockContracts;
+
     return HttpResponse.json({
-      contracts: mockContracts,
+      contracts,
       success: true,
-      count: mockContracts.length,
+      count: contracts.length,
     });
   }),
   http.get('*/api/products/list', () => {

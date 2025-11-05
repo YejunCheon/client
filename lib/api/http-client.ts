@@ -4,6 +4,7 @@ import axios, {
   type AxiosRequestConfig,
 } from 'axios';
 import { config as appConfig } from '@/lib/config';
+import { useAuthStore } from '@/lib/store/auth';
 
 export interface HttpClient {
   get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>;
@@ -60,7 +61,12 @@ class AxiosHttpClient implements AuthHttpClient {
       (response) => response,
       (error: AxiosError) => {
         if (error.response?.status === 401) {
-          this.handleUnauthorized();
+          const url = error.config?.url || '';
+          // 인증 관련 API가 아닌 경우에만 리다이렉트 (무한 루프 방지)
+          // /api/members/{id}는 useAuthGuard에서 인증 검증에 사용되므로 리다이렉트하지 않음
+          if (!url.includes('/auth') && !url.includes('/login') && !url.includes('/members/')) {
+            this.handleUnauthorized();
+          }
         }
         return Promise.reject(error);
       }
@@ -89,7 +95,33 @@ class AxiosHttpClient implements AuthHttpClient {
   private handleUnauthorized(): void {
     this.removeToken();
     if (typeof window !== 'undefined') {
-      window.location.href = '/auth/login';
+      // 인증 검증이 진행 중이면 리다이렉트하지 않음
+      const state = useAuthStore.getState();
+      if (state.isVerifying) {
+        return;
+      }
+      
+      // localStorage에 사용자 정보가 있으면 검증 중으로 표시하고 리다이렉트 지연
+      const userStr = localStorage.getItem('auth_user');
+      if (userStr) {
+        useAuthStore.getState().setVerifying(true);
+        // 잠시 대기 후 다시 확인
+        setTimeout(() => {
+          const currentState = useAuthStore.getState();
+          if (!currentState.isAuthenticated && !currentState.isVerifying) {
+            // 검증이 완료되었지만 인증되지 않은 경우에만 리다이렉트
+            if (window.location.pathname !== '/auth' && !window.location.pathname.startsWith('/auth')) {
+              window.location.href = '/auth';
+            }
+          }
+        }, 500);
+        return;
+      }
+      
+      // 사용자 정보가 없으면 즉시 리다이렉트
+      if (window.location.pathname !== '/auth' && !window.location.pathname.startsWith('/auth')) {
+        window.location.href = '/auth';
+      }
     }
   }
 

@@ -35,6 +35,7 @@ export interface ContractCreateRequest {
 export interface ContractCreateResponse {
   isSuccess: boolean;
   data: ContractData | Record<string, unknown> | string;
+  summary?: string;
   message?: string;
 }
 
@@ -45,12 +46,13 @@ export interface ContractSignRequest {
   roomId: string;
   productId: EntityId;
   deviceInfo?: string;
+  contract?: string | Record<string, unknown>;
 }
 
 export interface ContractSignResponse {
   isSuccess: boolean;
   data?: string | Record<string, unknown>;
-  isBothSigned?: boolean;
+  bothSign?: boolean;
   message?: string;
 }
 
@@ -81,6 +83,61 @@ export interface ContractDeleteResponse {
   contractId: EntityId;
 }
 
+export interface ContractSearchRequest {
+  roomId: string;
+  sellerId: EntityId;
+  buyerId: EntityId;
+  deviceInfo?: string;
+}
+
+export interface ContractSearchResponse {
+  isSuccess: boolean;
+  data?: ContractData | Record<string, unknown> | string;
+  summary?: string;
+  message?: string;
+}
+
+export interface ContractRejectRequest {
+  roomId: string;
+  sellerId: EntityId;
+  buyerId: EntityId;
+  deviceInfo?: string;
+}
+
+export interface ContractEditRequest {
+  roomId: string;
+  contract: string | Record<string, unknown>;
+  deviceInfo?: string;
+}
+
+export interface ContractSendRequest {
+  roomId: string;
+  sellerId: EntityId;
+  buyerId: EntityId;
+  deviceInfo?: string;
+}
+
+export interface ContractSendResponse {
+  isSuccess: boolean;
+  data?: string | Record<string, unknown>;
+  summary?: string;
+  message?: string;
+  bothSign?: boolean;
+}
+
+export interface ContractDetailParams {
+  roomId: string;
+  deviceInfo?: string;
+  /** Desired response format. Defaults to binary(PDF). */
+  responseType?: 'json' | 'pdf';
+}
+
+export type ContractDetailResponse =
+  | Blob
+  | ContractData
+  | Record<string, unknown>
+  | string;
+
 // ===== 상태/리스트 모델 =====
 
 export enum ContractStatus {
@@ -93,6 +150,7 @@ export enum ContractStatus {
 
 export interface ContractSummary {
   id: string | number;
+  contractId?: EntityId;
   roomId?: string;
   sellerId: EntityId;
   sellerName?: string | null;
@@ -101,14 +159,15 @@ export interface ContractSummary {
   productId?: EntityId;
   summary?: string;
   status: ContractStatus;
+  createdAt?: string;
   updatedAt?: string;
 }
 
 export interface ContractListItem extends ContractSummary {}
 
 export interface ContractListResponse {
-  contracts: ContractListItem[];
   success: boolean;
+  contracts: ContractListItem[];
   message?: string;
   count?: number;
 }

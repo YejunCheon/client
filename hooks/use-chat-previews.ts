@@ -71,6 +71,8 @@ async function resolveChatPreview(room: {
   buyerId: number | string;
   productId: number | string;
   updatedAt?: string;
+  lastMessage?: string;
+  lastMessageTime?: string;
 }, viewerId: string): Promise<ChatPreview> {
   const numericProductId = toNumber(room.productId);
 
@@ -93,10 +95,21 @@ async function resolveChatPreview(room: {
   const product = productRes.success ? productRes.product : undefined;
   const messages = messagesRes.success ? messagesRes.messages : [];
 
-  const lastMessage: ChatMessage | undefined =
-    [...messages].sort(
+  let lastMessage: ChatMessage | undefined;
+
+  if (messages.length > 0) {
+    lastMessage = [...messages].sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     )[0];
+  } else if (room.lastMessage) {
+    lastMessage = {
+      roomId: room.roomId,
+      senderId: room.sellerId,
+      content: room.lastMessage,
+      type: "TALK",
+      timestamp: room.lastMessageTime ?? room.updatedAt ?? new Date().toISOString(),
+    };
+  }
 
   const counterpartRole =
     String(room.sellerId) === viewerId ? "buyer" : "seller" as ChatPreview["counterpartRole"];
@@ -134,7 +147,9 @@ async function resolveChatPreview(room: {
     counterpartName,
     counterpartRole,
     lastMessage: lastMessage?.content ?? "최근 메시지가 없습니다.",
-    lastMessageAt: formatTimestamp(lastMessage?.timestamp ?? room.updatedAt),
+    lastMessageAt: formatTimestamp(
+      lastMessage?.timestamp ?? room.lastMessageTime ?? room.updatedAt
+    ),
     unreadCount: 0,
     status: "IN_PROGRESS",
   };
@@ -147,10 +162,15 @@ export function useChatPreviews(userId: string | null) {
       if (!userId) {
         return [];
       }
-      const response = await api.chat.getRooms({ userId });
-      // response.rooms가 배열인지 확인하고, 아니면 빈 배열 반환
-      const rooms = response?.rooms;
-      return Array.isArray(rooms) ? rooms : [];
+      try {
+        const response = await api.chat.getRooms({ userId });
+        // response.rooms가 배열인지 확인하고, 아니면 빈 배열 반환
+        const rooms = response?.rooms;
+        return Array.isArray(rooms) ? rooms : [];
+      } catch (error) {
+        console.error('[useChatPreviews] Failed to fetch chat rooms:', error);
+        return [];
+      }
     },
     enabled: Boolean(userId),
     staleTime: 60 * 1000,
