@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { ContractData, CreateContractRequest, CreateContractResponse } from '@/types/contract';
-import { apiClient } from '@/lib/api-client';
+import { api } from '@/lib/api';
 
 export interface ContractFormData {
   category?: string;
@@ -101,7 +101,7 @@ export function useContractCreate() {
       localStorage.setItem('contract_draft', JSON.stringify(draftData));
       
       // TODO: 서버에 임시 저장할 경우
-      // await apiClient.post('/api/contracts/draft', draftData);
+      // await api.contracts.saveDraft?.(draftData);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '임시 저장에 실패했습니다.';
       setError(errorMessage);
@@ -142,27 +142,21 @@ export function useContractCreate() {
         summary,
       };
 
-      // TODO: 실제 API 호출
-      // FormData로 서명 이미지와 함께 전송
-      // const formData = new FormData();
-      // formData.append('contract', JSON.stringify(contractData));
-      // formData.append('signature', signatureImage);
-      // formData.append('sellerId', request.sellerId);
-      // formData.append('buyerId', request.buyerId);
-      // if (request.roomId) formData.append('roomId', request.roomId);
-      // if (request.deviceInfo) formData.append('deviceInfo', request.deviceInfo);
-      
-      // const response = await apiClient.postMultipart<CreateContractResponse>(
-      //   '/api/contracts/create',
-      //   formData
-      // );
+      const response = await api.contracts.create({
+        ...request,
+        roomId: request.roomId ?? '',
+      });
 
-      console.log('계약서 제출:', { contractData, request });
-      
+      if (response?.isSuccess && typeof response.data === 'object') {
+        loadAIGeneratedContract(response.data as ContractData);
+      }
+
+      console.log('계약서 제출:', { contractData, request, response });
+
       // 성공 시 로컬 스토리지 초기화
       localStorage.removeItem('contract_draft');
       
-      // return response;
+      return response;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '계약서 제출에 실패했습니다.';
       setError(errorMessage);
@@ -170,7 +164,7 @@ export function useContractCreate() {
     } finally {
       setLoading(false);
     }
-  }, [formData, summary, signatureImage, validateForm]);
+  }, [formData, summary, validateForm, loadAIGeneratedContract]);
 
   return {
     formData,
@@ -190,4 +184,3 @@ export function useContractCreate() {
     validateForm,
   };
 }
-

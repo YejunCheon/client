@@ -7,13 +7,7 @@ import {
   type UseQueryOptions,
   type UseQueryResult,
 } from "@tanstack/react-query";
-import {
-  createProduct,
-  deleteProduct,
-  getProduct,
-  getProducts,
-  getProductsByMember,
-} from "@/lib/product-api";
+import { api } from "@/lib/api";
 import type {
   CreateProductPayload,
   CreateProductResponse,
@@ -64,7 +58,7 @@ export function useProductsList<TData = ProductListResponse>(
 ): UseQueryResult<TData, Error> {
   return useQuery<ProductListResponse, Error, TData>({
     queryKey: productKeys.list(),
-    queryFn: () => getProducts(),
+    queryFn: () => api.products.list(),
     ...options,
   });
 }
@@ -84,7 +78,7 @@ export function useProduct<TData = ProductResponse>(
       if (productId == null) {
         throw new Error("productId is required to fetch product detail");
       }
-      return getProduct(productId);
+      return api.products.get(productId);
     },
     enabled: productId != null && enabled,
     ...restOptions,
@@ -106,7 +100,7 @@ export function useMemberProducts<TData = MemberProductResponse>(
       if (memberId == null) {
         throw new Error("memberId is required to fetch member products");
       }
-      return getProductsByMember(memberId);
+      return api.products.listByMember(memberId);
     },
     enabled: memberId != null && enabled,
     ...restOptions,
@@ -123,7 +117,7 @@ export function useCreateProductMutation(
   const { onSuccess, ...restOptions } = options ?? {};
 
   return useMutation<CreateProductResponse, Error, CreateProductPayload>({
-    mutationFn: (payload) => createProduct(payload),
+    mutationFn: (payload) => api.products.create(payload),
     onSuccess: (data, variables, context) => {
       // 목록 및 회원별 목록 캐시 무효화
       queryClient.invalidateQueries({ queryKey: productKeys.list() });
@@ -144,7 +138,7 @@ export function useDeleteProductMutation(
   const { onSuccess, ...restOptions } = options ?? {};
 
   return useMutation<DeleteProductResponse, Error, number>({
-    mutationFn: (productId) => deleteProduct(productId),
+    mutationFn: (productId) => api.products.remove(productId),
     onSuccess: (data, productId, context) => {
       // 상세/목록 캐시 무효화
       queryClient.invalidateQueries({ queryKey: productKeys.list() });
