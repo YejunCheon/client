@@ -1,4 +1,8 @@
 import { mockMembers, type MockMemberRecord } from '@/mocks/data/members';
+import {
+  consumeMockVerifyToken,
+  getMockVerifyToken,
+} from '@/mocks/verify-tokens';
 import type {
   GetMemberResponse,
   LoginRequest,
@@ -17,9 +21,9 @@ function toMemberResponse(member: MockMemberRecord): GetMemberResponse {
     success: true,
     member: {
       id: member.id,
+      userId: member.userId,
       name: member.name,
-      residentNumber: member.residentNumber,
-      phoneNumber: member.phoneNumber,
+      ci: member.ci,
       signatureImage: member.signatureImage ?? null,
     },
   };
@@ -47,6 +51,75 @@ function ensureSignatureBlob(memberId: number, signature?: string | null): Blob 
 export function createMockMembersApi(): MembersApi {
   return {
     async register(payload: RegisterRequest): Promise<RegisterResponse> {
+      if (!payload.userId || !payload.password || !payload.token) {
+        return respond({
+          success: false,
+          message: '필수 값이 누락되었습니다.',
+        });
+      }
+
+      const normalizedUserId = payload.userId.trim();
+
+      if (!normalizedUserId) {
+        return respond({
+          success: false,
+          message: '아이디를 입력해주세요.',
+        });
+      }
+
+      const existingUserId = mockMembers.some(
+        (member) => member.userId.toLowerCase() === normalizedUserId.toLowerCase()
+      );
+
+      if (existingUserId) {
+        return respond({
+          success: false,
+          message: '이미 사용 중인 아이디입니다.',
+        });
+      }
+
+      const verifyPayload = getMockVerifyToken(payload.token);
+      if (!verifyPayload) {
+        return respond({
+          success: false,
+          message: '본인인증 토큰이 유효하지 않습니다.',
+        });
+      }
+
+      let ci: string;
+      let verifiedName: string;
+
+      try {
+        const resolved = consumeMockVerifyToken(payload.token);
+        ci = resolved.ci;
+        verifiedName = resolved.name;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : '본인인증 토큰을 확인할 수 없습니다.';
+        return respond({
+          success: false,
+          message,
+        });
+      }
+
+      const requestedName = payload.name?.trim();
+
+      if (requestedName && requestedName !== verifiedName) {
+        return respond({
+          success: false,
+          message: '본인인증 결과와 입력하신 이름이 일치하지 않습니다.',
+        });
+      }
+
+      const existingCi = mockMembers.some((member) => member.ci === ci);
+
+      if (existingCi) {
+        return respond({
+          success: false,
+          message: '이미 가입된 사용자입니다.',
+        });
+      }
+
       const nextId =
         mockMembers.reduce((max, member) => Math.max(max, member.id), 0) + 1;
 
@@ -63,10 +136,11 @@ export function createMockMembersApi(): MembersApi {
 
       const newMember: MockMemberRecord = {
         id: nextId,
-        name: payload.name,
-        residentNumber: payload.residentNumber,
-        phoneNumber: payload.phoneNumber,
+        userId: normalizedUserId,
+        name: verifiedName,
+        ci,
         signatureImage: signatureImagePath,
+        password: payload.password,
       };
 
       mockMembers.push(newMember);
@@ -75,7 +149,9 @@ export function createMockMembersApi(): MembersApi {
         success: true,
         message: '회원가입이 완료되었습니다.',
         memberId: newMember.id,
+        userId: newMember.userId,
         name: newMember.name,
+        ci: newMember.ci,
         signatureImage: signatureImagePath,
       };
 
@@ -83,19 +159,26 @@ export function createMockMembersApi(): MembersApi {
     },
 
     async login(payload: LoginRequest): Promise<LoginResponse> {
-      const member = mockMembers.find(
-        (m) =>
-          m.name === payload.name &&
-          m.residentNumber === payload.residentNumber &&
-          m.phoneNumber === payload.phoneNumber
-      );
+      if (!payload.userId || !payload.password) {
+        return respond({
+          success: false,
+          message: '아이디와 비밀번호를 입력해주세요.',
+        });
+      }
+
+      const member = mockMembers.find((m) => m.userId === payload.userId);
 
       if (!member) {
         return respond({
           success: false,
-          message: '일치하는 회원 정보가 없습니다.',
-          memberId: 0,
-          name: payload.name,
+          message: '아이디 또는 비밀번호가 올바르지 않습니다.',
+        });
+      }
+
+      if (member.password !== payload.password) {
+        return respond({
+          success: false,
+          message: '아이디 또는 비밀번호가 올바르지 않습니다.',
         });
       }
 
@@ -103,8 +186,11 @@ export function createMockMembersApi(): MembersApi {
         success: true,
         message: '로그인 성공',
         memberId: member.id,
+        userId: member.userId,
         name: member.name,
+        ci: member.ci,
         token: `mock-token-${member.id}`,
+        signatureImage: member.signatureImage ?? null,
       });
     },
 
@@ -123,9 +209,9 @@ export function createMockMembersApi(): MembersApi {
           success: false,
           member: {
             id: memberId,
+            userId: '',
             name: '',
-            residentNumber: '',
-            phoneNumber: '',
+            ci: '',
             signatureImage: null,
           },
         });

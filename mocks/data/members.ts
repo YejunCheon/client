@@ -1,31 +1,32 @@
 import type { Member } from '@/types/user';
 
 export interface MockMemberRecord extends Member {
-  residentNumber: string;
-  phoneNumber: string;
-  signatureImage?: string | null;
+  password: string;
 }
 
 export const mockMembers: MockMemberRecord[] = [
   {
     id: 101,
+    userId: 'seller101',
     name: '김판매',
-    residentNumber: '900101-1234567',
-    phoneNumber: '010-1111-2222',
+    ci: 'CI-KIM-SELLER-101',
     signatureImage: '/assets/mock_signature_1.png',
+    password: 'Seller!123',
   },
   {
     id: 201,
+    userId: 'buyer201',
     name: '이구매',
-    residentNumber: '920202-2345678',
-    phoneNumber: '010-3333-4444',
+    ci: 'CI-LEE-BUYER-201',
     signatureImage: '/assets/mock_signature_2.png',
+    password: 'Buyer!123',
   },
   {
     id: 301,
+    userId: 'admin301',
     name: '박관리',
-    residentNumber: '950303-3456789',
-    phoneNumber: '010-5555-6666',
+    ci: 'CI-PARK-ADMIN-301',
     signatureImage: '/assets/mock_signature_3.png',
+    password: 'Admin!123',
   },
 ];

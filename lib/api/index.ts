@@ -13,8 +13,7 @@ const httpApi: ApiRegistry = {
   chat: createChatApi(httpClient),
 };
 
-const defaultMode: ApiMode =
-  process.env.NODE_ENV === 'production' ? 'http' : 'mock';
+const defaultMode: ApiMode = 'http';
 
 const resolvedMode =
   (process.env.NEXT_PUBLIC_API_MODE as ApiMode | undefined) ?? defaultMode;

@@ -1,8 +1,8 @@
 export interface User {
   id: string;
+  userId: string;
   name: string;
-  residentNumber?: string;
-  phoneNumber?: string;
+  ci?: string;
   signatureImage?: string | null;
   verified: boolean;
   role?: 'buyer' | 'seller';
@@ -10,60 +10,59 @@ export interface User {
 
 export interface Member {
   id: number;
+  userId: string;
   name: string;
-  residentNumber: string;
-  phoneNumber: string;
+  ci: string;
   signatureImage?: string | null;
 }
 
-// 회원가입 요청
 export interface RegisterRequest {
+  userId: string;
+  password: string;
   name: string;
-  residentNumber: string;
-  phoneNumber: string;
-  signatureImage: File | Blob | string; // 파일 또는 이미 업로드된 경로
+  signatureImage: File | Blob | string;
+  token: string;
 }
 
-// 회원가입 응답
 export interface RegisterResponse {
   success: boolean;
-  name: string;
-  signatureImage: string;
   message: string;
-  memberId: number;
+  memberId?: number;
+  userId?: string;
+  name?: string;
+  ci?: string;
+  signatureImage?: string;
 }
 
-// 로그인 요청
 export interface LoginRequest {
-  name: string;
-  residentNumber: string;
-  phoneNumber: string;
+  userId: string;
+  password: string;
 }
 
-// 로그인 응답
 export interface LoginResponse {
   success: boolean;
-  name: string;
   message: string;
-  memberId: number;
+  memberId?: number;
+  userId?: string;
+  name?: string;
   token?: string;
+  signatureImage?: string | null;
+  ci?: string;
 }
 
-// 유저 정보 조회 응답
 export interface GetMemberResponse {
   success: boolean;
   member: Member;
 }
 
-// 로그아웃 응답
 export interface LogoutResponse {
   success: boolean;
   message: string;
 }
 
-// 기존 AuthResponse는 하위 호환성을 위해 유지
 export interface AuthResponse {
   success: boolean;
+  userId?: string;
   name?: string;
   message?: string;
   memberId?: number;

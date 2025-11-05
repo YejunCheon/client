@@ -1,11 +1,12 @@
 import { io, Socket } from 'socket.io-client';
+import { config as appConfig } from '@/lib/config';
 
 class SocketManager {
   private socket: Socket | null = null;
   private baseURL: string;
 
   constructor(baseURL?: string) {
-    this.baseURL = baseURL || process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/ws';
+    this.baseURL = baseURL || appConfig.wsUrl;
   }
 
   connect(token?: string): Socket {
