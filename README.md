@@ -75,6 +75,7 @@ npm run lint     # ESLint 검사
 NEXT_PUBLIC_API_URL=http://localhost:8080
 NEXT_PUBLIC_WS_URL=http://localhost:8080/ws
 NEXT_PUBLIC_ENV=development
+NEXT_PUBLIC_API_MODE=mock # dev 기본값은 mock, 서버 연동 시 http 로 변경
 ```
 
 ## 📚 문서
