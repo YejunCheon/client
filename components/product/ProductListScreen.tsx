@@ -28,7 +28,11 @@ function ProductCard({ product }: { product: Product }) {
       <div className="grid-cols-[max-content] grid-rows-[max-content] inline-grid place-items-start relative shrink-0" data-name="상품카드">
         <div className="[grid-area:1_/_1] bg-[var(--white,#f9f9f9)] h-[405px] ml-0 mt-[2.5px] rounded-[28px] w-[319px]" />
         <div className="[grid-area:1_/_1] h-[305px] ml-px mt-0 relative rounded-tl-[28px] rounded-tr-[28px] w-[318px]" data-name="상품사진">
-          <img alt="" className="absolute inset-0 max-w-none object-50%-50% object-cover pointer-events-none rounded-tl-[28px] rounded-tr-[28px] size-full" src={img5} />
+          <img
+            alt={product.productName}
+            className="absolute inset-0 max-w-none object-50%-50% object-cover pointer-events-none rounded-tl-[28px] rounded-tr-[28px] size-full"
+            src={product.productImage || img5}
+          />
         </div>
         <div className="[grid-area:1_/_1] box-border content-stretch flex flex-col gap-[6px] items-center justify-center ml-[15px] mt-[312.5px] relative w-[289px]" data-name="카드 내용">
           <div className="grid-cols-[max-content] grid-rows-[max-content] inline-grid leading-[0] place-items-start relative shrink-0 w-full">
@@ -37,7 +41,14 @@ function ProductCard({ product }: { product: Product }) {
           <div className="content-stretch flex items-center justify-between leading-[0] relative shrink-0 w-full">
             <div className="grid-cols-[max-content] grid-rows-[max-content] inline-grid place-items-start relative shrink-0">
               <div className="[grid-area:1_/_1] box-border content-stretch flex font-bold items-end justify-between ml-0 mt-0 not-italic relative text-[color:var(--black,#222222)] text-nowrap w-[76px] whitespace-pre">
-                <p className="font-['Inter:Bold',sans-serif] leading-[24px] relative shrink-0 text-[16px]">{parseInt(product.price).toLocaleString()}</p>
+                <p className="font-['Inter:Bold',sans-serif] leading-[24px] relative shrink-0 text-[16px]">
+                  {(() => {
+                    const numericPrice = Number(product.price);
+                    return Number.isNaN(numericPrice)
+                      ? product.price
+                      : numericPrice.toLocaleString();
+                  })()}
+                </p>
                 <p className="font-['Inter:Bold','Noto_Sans_KR:Bold',sans-serif] leading-[22px] relative shrink-0 text-[15px]">원</p>
               </div>
             </div>
@@ -69,10 +80,16 @@ export default function ProductListScreen() {
     <div className="w-full py-10" data-name="상품 목록 페이지">
       <div className="box-border content-stretch flex flex-col gap-[26px] items-center px-[15px] py-0 w-full" data-node-id="103:723">
         <div className="content-stretch flex items-center justify-between leading-[0] relative shrink-0 w-full" data-name="검색 결과 및 필터" data-node-id="55:580">
-          <div className="grid-cols-[max-content] grid-rows-[max-content] inline-grid leading-[26px] not-italic place-items-start relative shrink-0 text-[18px] text-nowrap whitespace-pre" data-node-id="55:433">
-            <p className="[grid-area:1_/_1] font-['Inter:Bold','Noto_Sans_KR:Bold',sans-serif] font-bold ml-0 mt-0 relative text-[#2487f8]" data-node-id="55:429">기계식 키보드</p>
-            <p className="[grid-area:1_/_1] font-['Inter:Regular','Noto_Sans_KR:Regular',sans-serif] font-normal ml-[104px] mt-0 relative text-[color:var(--black,#222222)]" data-node-id="55:432">의 검색결과</p>
-            <p className="[grid-area:1_/_1] font-['Inter:Regular','Noto_Sans_KR:Regular',sans-serif] font-normal ml-[200px] mt-0 relative text-[color:var(--darkgrey,#767676)]" data-node-id="55:579">{productsData?.product.length}건</p>
+          <div className="grid-cols-[max-content] grid-rows-[max-content] inline-grid leading-[26px] not-italic place-items-start relative shrink-0 text-[18px] whitespace-pre" data-node-id="55:433">
+            <p className="[grid-area:1_/_1] font-['Inter:Bold','Noto_Sans_KR:Bold',sans-serif] font-bold ml-0 mt-0 relative text-[#2487f8]" data-node-id="55:429">
+              전체 상품
+            </p>
+            <p className="[grid-area:1_/_1] font-['Inter:Regular','Noto_Sans_KR:Regular',sans-serif] font-normal ml-[130px] mt-0 relative text-[color:var(--black,#222222)]" data-node-id="55:432">
+              목록
+            </p>
+            <p className="[grid-area:1_/_1] font-['Inter:Regular','Noto_Sans_KR:Regular',sans-serif] font-normal ml-[210px] mt-0 relative text-[color:var(--darkgrey,#767676)]" data-node-id="55:579">
+              {productsData?.products?.length ?? 0}건
+            </p>
           </div>
           <div className="grid-cols-[max-content] grid-rows-[max-content] inline-grid place-items-start relative shrink-0" data-node-id="55:574">
             <div className="[grid-area:1_/_1] box-border content-stretch flex gap-[11px] items-center leading-[26px] ml-0 mt-0 not-italic relative text-[18px] text-nowrap whitespace-pre" data-node-id="55:578">
@@ -84,7 +101,7 @@ export default function ProductListScreen() {
         </div>
 
         <div className="grid grid-cols-4 gap-[26px]">
-          {productsData?.product.map((product) => (
+          {productsData?.products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>

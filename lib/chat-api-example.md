@@ -92,24 +92,24 @@ function ChatComponent() {
 ### 2. 직접 API 호출
 
 ```tsx
-import { createChatRoom, getChatMessages, getChatRooms } from '@/lib/chat-api';
+import { api } from '@/lib/api';
 
 // 채팅방 생성
-const room = await createChatRoom({
+const room = await api.chat.createRoom({
   seller: 'seller123',
   buyer: 'buyer456',
   productId: 'product789',
 });
 
 // 메시지 조회
-const messages = await getChatMessages({
+const messages = await api.chat.getMessages({
   seller: 'seller123',
   buyer: 'buyer456',
-  user: 'user123',
+  userId: 'user123',
 });
 
 // 채팅방 목록 조회
-const rooms = await getChatRooms({
+const rooms = await api.chat.getRooms({
   userId: 'user123',
 });
 ```
@@ -167,4 +167,3 @@ stompClient.disconnect();
 - 자동 구독/해제
 - 낙관적 업데이트
 - 메시지 정렬 및 중복 방지
-

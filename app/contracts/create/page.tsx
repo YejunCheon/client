@@ -7,6 +7,7 @@ import { ContractSignSection } from '@/components/contract/ContractSignSection';
 import { Button } from '@/components/ui/button';
 import { useContractCreate } from '@/hooks/use-contract-create';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { useAuthStore } from '@/lib/store/auth';
 import { Send } from 'lucide-react';
 
 export default function ContractCreatePage() {
@@ -27,6 +28,7 @@ export default function ContractCreatePage() {
     submitContract,
     validateForm,
   } = useContractCreate();
+  const { user } = useAuthStore();
 
   // 페이지 로드 시 임시 저장된 데이터 불러오기
   useEffect(() => {
@@ -65,7 +67,7 @@ export default function ContractCreatePage() {
       const roomId = urlParams.get('roomId') || '';
       
       await submitContract({
-        sellerId: '', // TODO: 현재 사용자 ID (인증 스토어에서 가져오기)
+        sellerId: user?.id ?? '',
         buyerId,
         roomId: roomId || undefined,
         deviceInfo: navigator.userAgent,
@@ -153,4 +155,3 @@ export default function ContractCreatePage() {
     </div>
   );
 }
-

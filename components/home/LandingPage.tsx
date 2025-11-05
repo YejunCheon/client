@@ -1,22 +1,48 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import Link from "next/link";
 import { Shield, FileText, PenTool } from "lucide-react";
+import { useProductsList } from "@/hooks/use-products";
 import InteractiveDotBackground from "./InteractiveDotBackground";
 
-const imgMockProduct = "/assets/mock_product_img.png";
-
-// 더미 데이터
-const featuredProducts = [
-  { id: 1, name: "키크론 청축 K4 블루", price: 50000, image: imgMockProduct, time: "20분 전" },
-  { id: 2, name: "애플 아이패드 프로", price: 800000, image: imgMockProduct, time: "1시간 전" },
-  { id: 3, name: "맥북 에어 M2", price: 1200000, image: imgMockProduct, time: "2시간 전" },
-  { id: 4, name: "에어팟 프로 2세대", price: 250000, image: imgMockProduct, time: "3시간 전" },
-  { id: 5, name: "게이밍 마우스", price: 35000, image: imgMockProduct, time: "5시간 전" },
-];
-
 export default function LandingPage() {
+  const { data: productsData, isLoading } = useProductsList();
+
+  const featuredProducts = useMemo(() => {
+    const products = productsData?.products ?? [];
+    const sorted = [...products].sort((a, b) => {
+      const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+      const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+    return sorted.slice(0, 4);
+  }, [productsData?.products]);
+
+  const formatPrice = (price: string) => {
+    const parsed = Number(price);
+    return Number.isNaN(parsed) ? price : parsed.toLocaleString();
+  };
+
+  const formatUpdatedAt = (updatedAt?: string) => {
+    if (!updatedAt) {
+      return "방금 전";
+    }
+    const date = new Date(updatedAt);
+    if (Number.isNaN(date.getTime())) {
+      return updatedAt;
+    }
+
+    const diff = Date.now() - date.getTime();
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+
+    if (diff < minute) return "방금 전";
+    if (diff < hour) return `${Math.floor(diff / minute)}분 전`;
+    if (diff < day) return `${Math.floor(diff / hour)}시간 전`;
+    return `${Math.floor(diff / day)}일 전`;
+  };
 
   return (
     <div className="w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-gradient-to-br from-blue-50 to-white overflow-hidden">
@@ -114,39 +140,63 @@ export default function LandingPage() {
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {featuredProducts.slice(0, 4).map((product) => (
-              <Link
-                key={product.id}
-                href={`/product/${product.id}`}
-                className="bg-[#f9f9f9] rounded-[28px] h-[405px] relative overflow-hidden shadow-md hover:shadow-xl transition-all group"
-              >
-                <div className="h-[305px] relative overflow-hidden">
-                  <img
-                    alt={product.name}
-                    src={product.image}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="text-[16px] font-normal text-[#222] mb-2 line-clamp-2">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-end gap-1">
-                      <span className="text-[16px] font-bold text-[#222]">
-                        {product.price.toLocaleString()}
-                      </span>
-                      <span className="text-[15px] font-bold text-[#222] mb-0.5">원</span>
+            {isLoading ? (
+              Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="bg-[#f9f9f9] rounded-[28px] h-[405px] animate-pulse"
+                >
+                  <div className="h-[305px] bg-[#ececec]" />
+                  <div className="p-4 space-y-4">
+                    <div className="h-4 bg-[#e0e0e0] rounded" />
+                    <div className="flex items-center justify-between">
+                      <div className="h-4 w-20 bg-[#e0e0e0] rounded" />
+                      <div className="h-4 w-12 bg-[#e0e0e0] rounded" />
                     </div>
-                    <span className="text-[14px] text-[#767676]">{product.time}</span>
                   </div>
                 </div>
-              </Link>
-            ))}
+              ))
+            ) : featuredProducts.length > 0 ? (
+              featuredProducts.map((product) => (
+                <Link
+                  key={product.id}
+                  href={`/product/${product.id}`}
+                  className="bg-[#f9f9f9] rounded-[28px] h-[405px] relative overflow-hidden shadow-md hover:shadow-xl transition-all group"
+                >
+                  <div className="h-[305px] relative overflow-hidden">
+                    <img
+                      alt={product.productName}
+                      src={product.productImage || "/assets/mock_product_img.png"}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="text-[16px] font-normal text-[#222] mb-2 line-clamp-2">
+                      {product.productName}
+                    </h3>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-end gap-1">
+                        <span className="text-[16px] font-bold text-[#222]">
+                          {formatPrice(product.price)}
+                        </span>
+                        <span className="text-[15px] font-bold text-[#222] mb-0.5">원</span>
+                      </div>
+                      <span className="text-[14px] text-[#767676]">
+                        {formatUpdatedAt(product.updatedAt)}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="col-span-4 flex min-h-[200px] flex-col items-center justify-center rounded-3xl border border-dashed border-[#dcdcdc] bg-white">
+                <p className="text-lg font-semibold text-[#444]">등록된 상품이 없습니다.</p>
+                <p className="text-sm text-[#777] mt-2">첫 번째 상품을 등록해 보세요!</p>
+              </div>
+            )}
           </div>
         </div>
       </section>
     </div>
   );
 }
-
