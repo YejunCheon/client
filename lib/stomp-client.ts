@@ -362,6 +362,17 @@ class StompClientManager {
   }
 
   /**
+   * 특정 방의 구독 핸들러들에게 메시지 브로드캐스트 (Mock 환경에서 사용)
+   */
+  broadcastMessage(roomId: string, message: ChatMessage): void {
+    const handlers = this.messageHandlers.get(roomId) || new Set();
+    console.log(`[STOMP] Broadcasting message to room ${roomId}, handlers count: ${handlers.size}`);
+    handlers.forEach((handler) => {
+      handler(message);
+    });
+  }
+
+  /**
    * 재연결 시도 (exponential backoff)
    */
   private attemptReconnect(): void {
