@@ -19,8 +19,16 @@ import type {
   ContractCreateResponse,
   ContractDeleteResponse,
   ContractListResponse,
+  ContractDetailParams,
+  ContractDetailResponse,
+  ContractEditRequest,
   ContractSignRequest,
   ContractSignResponse,
+  ContractSearchRequest,
+  ContractSearchResponse,
+  ContractRejectRequest,
+  ContractSendRequest,
+  ContractSendResponse,
   ContractUploadPayload,
   ContractUploadResponse,
 } from '@/types/contract';
@@ -51,11 +59,15 @@ export interface ProductsApi {
 }
 
 export interface ContractsApi {
-  list(): Promise<ContractListResponse>;
+  list(params?: { roomId?: string }): Promise<ContractListResponse>;
   create(payload: ContractCreateRequest): Promise<ContractCreateResponse>;
   sign(payload: ContractSignRequest): Promise<ContractSignResponse>;
-  upload(payload: ContractUploadPayload): Promise<ContractUploadResponse>;
-  download(contractId: number | string): Promise<Blob>;
+  search(payload: ContractSearchRequest): Promise<ContractSearchResponse>;
+  reject(payload: ContractRejectRequest): Promise<ContractSendResponse>;
+  edit(payload: ContractEditRequest): Promise<ContractSearchResponse>;
+  send(payload: ContractSendRequest): Promise<ContractSendResponse>;
+  detail(params: ContractDetailParams): Promise<ContractDetailResponse>;
+  upload?(payload: ContractUploadPayload): Promise<ContractUploadResponse>;
   delete(contractId: number | string): Promise<ContractDeleteResponse>;
 }
 
