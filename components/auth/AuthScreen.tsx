@@ -208,14 +208,16 @@ export default function AuthScreen({
         }
 
         const response = await api.members.login({
-          userId: loginData.userId.trim(),
+          id: loginData.userId.trim(),
           password: loginData.password,
         });
 
-        if (response.success && response.memberId && response.userId) {
+        const loginId = response.id ?? response.userId;
+
+        if (response.success && response.memberId && loginId) {
           const user = {
             id: response.memberId.toString(),
-            userId: response.userId,
+            userId: loginId,
             name: response.name ?? "",
             ci: response.ci,
             signatureImage: response.signatureImage ?? null,
@@ -255,17 +257,19 @@ export default function AuthScreen({
         shouldClearVerifyToken = true;
 
         const response = await api.members.register({
-          userId: signupData.userId.trim(),
+          id: signupData.userId.trim(),
           password: signupData.password,
           name: signupData.name.trim(),
           token: verifyToken,
           signatureImage: signupData.signatureImage,
         });
 
-        if (response.success && response.memberId && response.userId && response.name) {
+        const signupId = response.id ?? response.userId;
+
+        if (response.success && response.memberId && signupId && response.name) {
           const user = {
             id: response.memberId.toString(),
-            userId: response.userId,
+            userId: signupId,
             name: response.name,
             ci: response.ci,
             signatureImage: response.signatureImage ?? null,
