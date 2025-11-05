@@ -47,11 +47,28 @@ if (typeof window !== 'undefined') {
   const userStr = localStorage.getItem('auth_user');
   if (userStr) {
     try {
-      const user = JSON.parse(userStr);
-      // 토큰은 HttpOnly 쿠키로 관리되므로 null로 설정
-      useAuthStore.setState({ user, token: null, isAuthenticated: true });
+      const parsed = JSON.parse(userStr) as Partial<User>;
+      if (parsed && parsed.id && parsed.userId) {
+        const restored: User = {
+          id: String(parsed.id),
+          userId: String(parsed.userId),
+          name: parsed.name ?? '',
+          ci: parsed.ci,
+          signatureImage: parsed.signatureImage ?? null,
+          verified: Boolean(parsed.verified),
+          role: parsed.role,
+        };
+        useAuthStore.setState({
+          user: restored,
+          token: null,
+          isAuthenticated: true,
+        });
+      } else {
+        localStorage.removeItem('auth_user');
+      }
     } catch (e) {
       console.error('Failed to restore auth state:', e);
+      localStorage.removeItem('auth_user');
     }
   }
 }
