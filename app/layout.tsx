@@ -33,7 +33,7 @@ export default function RootLayout({
           <ReactQueryProvider>
             <div className="min-h-screen flex flex-col">
               <Navbar />
-              <main className="mx-auto w-full max-w-[1512px] flex-1 px-5">
+              <main className="mx-auto w-full max-w-[1512px] flex-1 px-5 flex flex-col">
                 {children}
               </main>
               <Footer />

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-
-const imgGroup3 = "/assets/e2c37e32f77f32c5fc92c2d4bd050ce4822bbe03.svg";
+import { ArrowUp } from "lucide-react";
 
 interface Message {
   id: string;
@@ -52,10 +51,10 @@ export default function ChatRoom({ messages = [], onSend }: ChatRoomProps) {
   };
 
   return (
-    <div className="bg-[#f9f9f9] rounded-[27px] w-full h-full flex flex-col" data-name="chat UI" data-node-id="92:1587">
-      <div className="flex flex-col h-full" data-node-id="92:1588">
+    <div className="bg-[#f9f9f9] rounded-[27px] w-full flex-1 flex flex-col min-h-0" data-name="chat UI" data-node-id="92:1587">
+      <div className="flex flex-col flex-1 min-h-0 px-4 pt-6 pb-4" data-node-id="92:1588">
         {/* 메시지 영역 */}
-        <div className="flex-1 flex flex-col gap-[12px] overflow-y-auto px-4 py-6" data-name="chat area" data-node-id="92:1589">
+        <div className="flex-1 flex flex-col gap-[12px] overflow-y-auto mb-4" data-name="chat area" data-node-id="92:1589">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full text-[#acacac] text-[16px]">
               메시지가 없습니다.
@@ -90,8 +89,8 @@ export default function ChatRoom({ messages = [], onSend }: ChatRoomProps) {
           <div ref={messagesEndRef} />
         </div>
         
-        {/* 입력 필드 영역 (하단 고정) */}
-        <div className="flex-shrink-0 bg-[#f2f2f2] border-t border-[#dedede] border-solid flex h-[56px] items-center justify-between px-[16px] py-[8px] rounded-b-[27px]" data-name="message input field" data-node-id="92:1610">
+        {/* 입력 필드 영역 (카드 내부 하단, 간격 있음) */}
+        <div className="flex-shrink-0 bg-[#f2f2f2] border border-[#dedede] rounded-[15px] flex h-[56px] items-center justify-between px-[16px] py-[8px]" data-name="message input field" data-node-id="92:1610">
           <input
             ref={inputRef}
             type="text"
@@ -102,17 +101,13 @@ export default function ChatRoom({ messages = [], onSend }: ChatRoomProps) {
             className="flex-grow bg-transparent outline-none text-[16px] text-[#2b2b2b] placeholder:text-[#acacac] font-['Noto_Sans_KR:Medium',sans-serif] font-medium leading-[1.5] mr-3"
             data-node-id="92:1611"
           />
-          <div
+          <button
             onClick={handleSendMessage}
-            className="bg-[#222222] flex items-center justify-center px-[10px] py-[10px] rounded-[13px] w-[36px] h-[36px] cursor-pointer hover:bg-[#333333] transition-colors"
+            className="bg-[#222222] flex items-center justify-center rounded-full w-[36px] h-[36px] cursor-pointer hover:bg-[#333333] transition-colors"
             data-node-id="92:1612"
           >
-            <div className="h-[18px] relative shrink-0 w-[14px]" data-node-id="92:1613">
-              <div className="absolute bottom-0 left-[-12.73%] right-[-12.73%] top-[-7.52%]">
-                <img alt="send" className="block max-w-none size-full" src={imgGroup3} />
-              </div>
-            </div>
-          </div>
+            <ArrowUp className="w-5 h-5 text-white" />
+          </button>
         </div>
       </div>
     </div>

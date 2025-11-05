@@ -91,9 +91,9 @@ export default function ChatRoomPage() {
     : product?.price || "";
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="mx-auto max-w-[1400px] px-5 h-[calc(100vh-4rem)]">
-        <div className="flex gap-6 h-full">
+    <div className="flex-1 flex flex-col min-h-0 py-6">
+      <div className="mx-auto max-w-[1400px] w-full px-5 flex-1 flex flex-col min-h-0">
+        <div className="flex gap-6 flex-1 min-h-0">
           {/* 왼쪽 영역: 상품 정보 */}
           <div className="flex-shrink-0 w-[380px]">
             {product ? (
@@ -127,6 +127,22 @@ export default function ChatRoomPage() {
                   {/* 구분선 */}
                   <div className="h-px bg-[#dedede] w-full" />
 
+                  {/* 계약서 작성하기 설명 */}
+                  <div className="bg-[#f9f9f9] rounded-[15px] p-4 flex flex-col gap-3">
+                    <div className="flex items-start gap-2">
+                      <FileText className="w-5 h-5 text-[#2487f8] shrink-0 mt-0.5" />
+                      <div className="flex flex-col gap-1">
+                        <h3 className="text-[14px] font-bold text-[#222]">
+                          계약서 작성하기
+                        </h3>
+                        <p className="text-[12px] leading-[18px] text-[#767676]">
+                          채팅 내용을 바탕으로 AI가 계약서 초안을 자동 생성합니다. 
+                          간편한 전자서명으로 법적 효력이 있는 계약서를 완성하세요.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* 계약서 작성하기 버튼 */}
                   <button
                     onClick={handleCreateContract}
@@ -153,7 +169,7 @@ export default function ChatRoomPage() {
           </div>
 
           {/* 오른쪽 영역: 채팅 */}
-          <div className="flex-1 min-w-0 h-full">
+          <div className="flex-1 min-w-0 flex flex-col min-h-0">
             <ChatRoom 
               messages={formattedMessages} 
               onSend={handleSendMessage}
