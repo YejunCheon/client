@@ -201,9 +201,8 @@ const products = await api.products.list();
 
 // POST 요청
 const result = await api.members.login({
-  name,
-  residentNumber,
-  phoneNumber,
+  userId,
+  password,
 });
 ```
 

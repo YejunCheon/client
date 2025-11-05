@@ -9,31 +9,33 @@ API 명세서 (현재 코드 기준)
 - 세션: STATELESS
 - Anonymous 인증: 비활성화됨
 
-[회원 API] /api/members
-1) POST /api/members/register
+[회원 API]
+1) POST /api/register
    - 인증: 불필요
    - 요청(multipart/form-data)
+     - userId (string, required)
+     - password (string, required)
      - name (string, required)
-     - residentNumber (string, required)
-     - phoneNumber (string, required)
+     - token (string, required, 1회성 mock verify 토큰)
      - signatureImage (file, required)
-   - 응답: { success, message, memberId, name, signatureImage }
+   - 동작: verify 서버에서 발급한 opaque token을 서버 간 호출로 검증 후 CI/이름 확인
+   - 응답: { success, message, memberId, userId, name, ci, signatureImage }
 
-2) POST /api/members/login
+2) POST /api/login
    - 인증: 불필요
    - 요청(application/json)
-     - { name, residentNumber, phoneNumber }
+     - { userId, password }
    - 동작: JWT 발급 → HttpOnly 쿠키 token 설정
-   - 응답: { success, message, memberId, name }
+   - 응답: { success, message, memberId, userId, name, ci }
 
-3) POST /api/members/logout
+3) POST /api/logout
    - 인증: 불필요
    - 동작: HttpOnly 쿠키 token 삭제
    - 응답: { success, message }
 
 4) GET /api/members/{id}
    - 인증: 필요
-   - 응답: { success, member: { id, name, residentNumber, phoneNumber, signatureImage } }
+   - 응답: { success, member: { id, userId, name, ci, signatureImage } }
 
 5) GET /api/members/signature/{memberId}
    - 인증: 필요
@@ -140,9 +142,10 @@ API 명세서 (현재 코드 기준)
 
 [보안 정책 요약]
 - 허용(permitAll)
-  - /api/members/register, /api/members/login, /api/members/logout
+  - /api/register, /api/login, /api/logout
   - /static/**, /uploads/**
-  - /ws/**
+  - /mock-verify/** (개발용)
+- /ws/**
 - 인증 필요(authenticated)
   - /api/members/** (위 3개 제외 전부)
   - /api/products/create, /api/products/{id}, /api/products/{id}/**, /api/products/list, /api/products/member/**
