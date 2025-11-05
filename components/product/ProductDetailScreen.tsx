@@ -87,7 +87,10 @@ export default function ProductDetailScreen() {
   }
 
   const product = productData.product;
-  const formattedPrice = parseInt(product.price).toLocaleString();
+  const numericPrice = Number(product.price);
+  const formattedPrice = Number.isNaN(numericPrice)
+    ? product.price
+    : numericPrice.toLocaleString();
   const isOwner = Boolean(user?.id && user.id === String(product.memberId));
 
   return (

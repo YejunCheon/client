@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useAuthStore } from "@/lib/store/auth";
-import { login, register } from "@/lib/auth-api";
+import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,7 +76,7 @@ export default function AuthScreen({ initialMode = "login", returnUrl }: AuthScr
           return;
         }
 
-        const response = await login({
+        const response = await api.members.login({
           name: loginData.name,
           residentNumber: loginData.residentNumber,
           phoneNumber: loginData.phoneNumber,
@@ -111,7 +111,7 @@ export default function AuthScreen({ initialMode = "login", returnUrl }: AuthScr
           return;
         }
 
-        const response = await register({
+        const response = await api.members.register({
           name: signupData.name,
           residentNumber: signupData.residentNumber,
           phoneNumber: signupData.phoneNumber,

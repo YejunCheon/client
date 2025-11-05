@@ -3,7 +3,7 @@ export interface User {
   name: string;
   residentNumber?: string;
   phoneNumber?: string;
-  signatureImage?: string;
+  signatureImage?: string | null;
   verified: boolean;
   role?: 'buyer' | 'seller';
 }
@@ -13,7 +13,7 @@ export interface Member {
   name: string;
   residentNumber: string;
   phoneNumber: string;
-  signatureImage?: string;
+  signatureImage?: string | null;
 }
 
 // 회원가입 요청
@@ -21,7 +21,7 @@ export interface RegisterRequest {
   name: string;
   residentNumber: string;
   phoneNumber: string;
-  signatureImage: File | string; // File은 FormData로 전송, string은 이미 업로드된 경로
+  signatureImage: File | Blob | string; // 파일 또는 이미 업로드된 경로
 }
 
 // 회원가입 응답
@@ -46,6 +46,7 @@ export interface LoginResponse {
   name: string;
   message: string;
   memberId: number;
+  token?: string;
 }
 
 // 유저 정보 조회 응답
@@ -68,4 +69,3 @@ export interface AuthResponse {
   memberId?: number;
   signatureImage?: string;
 }
-

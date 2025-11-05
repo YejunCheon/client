@@ -78,42 +78,85 @@ const FILTER_OPTIONS: Array<{ value: StatusFilter; label: string }> = [
   })),
 ];
 
-const formatParticipant = (name?: string | null, identifier?: string) => {
-  if (name && name.trim().length > 0) {
-    return name;
+const formatParticipant = (
+  name?: string | null,
+  identifier?: string | number | null
+) => {
+  const safeName = typeof name === 'string' ? name.trim() : '';
+  if (safeName.length > 0) {
+    return safeName;
   }
-  if (identifier && identifier.trim().length > 0) {
-    return identifier;
+
+  const safeIdentifier =
+    identifier !== undefined && identifier !== null
+      ? String(identifier).trim()
+      : '';
+
+  if (safeIdentifier.length > 0) {
+    return safeIdentifier;
   }
+
   return '정보 없음';
 };
 
 
-const ContractListScreen = () => {
-  const { data, error, isLoading, isFetching, refetch } = useContracts();
+interface ContractListScreenProps {
+  viewerId: string | null;
+}
+
+const ContractListScreen = ({ viewerId }: ContractListScreenProps) => {
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const contracts = useMemo<ContractListItem[]>(
-    () => data?.contracts ?? [],
-    [data?.contracts]
-  );
-  const totalCount = contracts.length;
+  const {
+    data,
+    error,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useContracts({
+    enabled: Boolean(viewerId),
+  });
+
+  const viewerContracts = useMemo<ContractListItem[]>(() => {
+    const allContracts = data?.contracts ?? [];
+    if (!viewerId) {
+      return [];
+    }
+    const viewerKey = String(viewerId);
+    return allContracts.filter((contract) => {
+      const participants = [
+        contract.sellerId,
+        contract.buyerId,
+        contract.sellerName,
+        contract.buyerName,
+      ];
+      return participants.some((value) => {
+        if (value == null) return false;
+        return String(value) === viewerKey;
+      });
+    });
+  }, [data?.contracts, viewerId]);
+
+  const totalCount = viewerContracts.length;
 
   const statusCounts = useMemo(() => {
-    return contracts.reduce<Record<ContractStatus, number>>((acc, contract) => {
-      acc[contract.status] = (acc[contract.status] ?? 0) + 1;
-      return acc;
-    }, Object.fromEntries(STATUS_ORDER.map((status) => [status, 0])) as Record<
-      ContractStatus,
-      number
-    >);
-  }, [contracts]);
+    return viewerContracts.reduce<Record<ContractStatus, number>>(
+      (acc, contract) => {
+        acc[contract.status] = (acc[contract.status] ?? 0) + 1;
+        return acc;
+      },
+      Object.fromEntries(STATUS_ORDER.map((status) => [status, 0])) as Record<
+        ContractStatus,
+        number
+      >
+    );
+  }, [viewerContracts]);
 
   const latestUpdatedAt = useMemo(() => {
     let latest: Date | null = null;
 
-    contracts.forEach((contract) => {
+    viewerContracts.forEach((contract) => {
       if (!contract.updatedAt) return;
       const parsed = new Date(contract.updatedAt);
       if (Number.isNaN(parsed.getTime())) return;
@@ -123,16 +166,16 @@ const ContractListScreen = () => {
     });
 
     return latest;
-  }, [contracts]);
+  }, [viewerContracts]);
 
   const filteredContracts = useMemo(() => {
-    if (contracts.length === 0) {
+    if (viewerContracts.length === 0) {
       return [];
     }
 
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
-    return contracts.filter((contract) => {
+    return viewerContracts.filter((contract) => {
       const matchesStatus =
         selectedStatus === 'all' || contract.status === selectedStatus;
 
@@ -159,12 +202,15 @@ const ContractListScreen = () => {
 
       return searchableText.includes(normalizedSearch);
     });
-  }, [contracts, searchTerm, selectedStatus]);
+  }, [viewerContracts, searchTerm, selectedStatus]);
 
   const isFiltering =
     selectedStatus !== 'all' || searchTerm.trim().length > 0 || false;
   const showEmptyState =
-    !isLoading && !error && filteredContracts.length === 0 && contracts.length > 0;
+    !isLoading &&
+    !error &&
+    filteredContracts.length === 0 &&
+    viewerContracts.length > 0;
 
   const formatLastUpdated = (value?: Date | string | null) => {
     if (!value) {
@@ -201,6 +247,21 @@ const ContractListScreen = () => {
     setSelectedStatus('all');
     setSearchTerm('');
   };
+
+  if (!viewerId) {
+    return (
+      <div className="w-full py-16">
+        <div className="mx-auto flex w-full max-w-[1200px] flex-col items-center justify-center px-5 py-24">
+          <h2 className="text-2xl font-semibold text-[#222]">
+            로그인 정보가 필요합니다.
+          </h2>
+          <p className="mt-2 text-sm text-[#767676]">
+            다시 로그인한 뒤 계약서를 확인해 주세요.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full py-16">
@@ -321,7 +382,7 @@ const ContractListScreen = () => {
         )}
 
         <section className="min-h-[300px]">
-          {(isLoading || isFetching) && contracts.length === 0 ? (
+          {(isLoading || isFetching) && viewerContracts.length === 0 ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 6 }).map((_, index) => (
                 <Card

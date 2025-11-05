@@ -3,21 +3,21 @@ import { mockContracts } from './data/contracts';
 import { mockProducts } from './data/products';
 
 export const handlers = [
-  http.get('*/contracts', () => {
+  http.get('*/api/contracts', () => {
     return HttpResponse.json({
       contracts: mockContracts,
       success: true,
       count: mockContracts.length,
     });
   }),
-  http.get('*/api/product/list', () => {
+  http.get('*/api/products/list', () => {
     return HttpResponse.json({
-      product: mockProducts,
+      products: mockProducts,
       success: true,
       count: mockProducts.length,
     });
   }),
-  http.get('*/api/product/:productId', ({ params }) => {
+  http.get('*/api/products/:productId', ({ params }) => {
     const { productId } = params;
     const product = mockProducts.find((p) => p.id === Number(productId));
 

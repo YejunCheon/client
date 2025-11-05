@@ -16,8 +16,14 @@ client/
 │   ├── pdf/                     # 📋 준비됨
 │   └── signature/               # 📋 준비됨
 ├── lib/                         # 유틸리티
-│   ├── api-client.ts            # ✅ API 클라이언트 (Axios 래퍼)
-│   ├── axios.ts                 # ✅ Axios 인스턴스
+│   ├── api/                     # ✅ API 레이어 (HTTP + Mock)
+│   │   ├── index.ts             # ✅ API Registry & 모드 전환
+│   │   ├── http-client.ts       # ✅ Axios 기반 HTTP 클라이언트
+│   │   ├── members.ts           # ✅ 회원 API 모듈
+│   │   ├── products.ts          # ✅ 상품 API 모듈
+│   │   ├── contracts.ts         # ✅ 계약 API 모듈
+│   │   ├── chat.ts              # ✅ 채팅 API 모듈
+│   │   └── mock/                # ✅ Mock 구현 (MSW/내장 데이터)
 │   ├── react-query.tsx          # ✅ React Query Provider
 │   ├── sockets.ts               # ✅ WebSocket 관리자
 │   ├── utils.ts                 # ✅ 유틸리티 함수
@@ -79,7 +85,7 @@ client/
 |------|------|------|
 | 프로젝트 초기화 | ✅ 완료 | - |
 | TypeScript 타입 정의 | ✅ 완료 | `types/*.ts` |
-| API 클라이언트 | ✅ 완료 | `lib/api-client.ts` |
+| API 클라이언트 | ✅ 완료 | `lib/api/index.ts` |
 | React Query 설정 | ✅ 완료 | `lib/react-query.tsx` |
 | WebSocket 관리 | ✅ 완료 | `lib/sockets.ts` |
 | 인증 스토어 | ✅ 완료 | `lib/store/auth.ts` |
@@ -188,26 +194,28 @@ NEXT_PUBLIC_ENV=development
 
 ### 1. API 호출
 ```typescript
-import { apiClient } from '@/lib/api-client';
+import { api } from '@/lib/api';
 
 // GET 요청
-const products = await apiClient.get('/api/product/list');
+const products = await api.products.list();
 
 // POST 요청
-const result = await apiClient.post('/api/members/login', {
-  name, residentNumber, phoneNumber
+const result = await api.members.login({
+  name,
+  residentNumber,
+  phoneNumber,
 });
 ```
 
 ### 2. React Query 사용
 ```typescript
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
+import { api } from '@/lib/api';
 
 function useProducts() {
   return useQuery({
     queryKey: ['products'],
-    queryFn: () => apiClient.get('/api/product/list'),
+    queryFn: () => api.products.list(),
   });
 }
 ```
@@ -252,4 +260,3 @@ npm run dev
 브라우저에서 http://localhost:3000 접속!
 
 축하합니다! DealChain 클라이언트 개발 환경이 준비되었습니다! 🚀
-

@@ -1,15 +1,10 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { stompClient, createWebSocketMessage } from '@/lib/stomp-client';
-import {
-  createChatRoom,
-  getChatMessages,
-  getChatRooms,
-} from '@/lib/chat-api';
+import { api } from '@/lib/api';
 import type {
   ChatMessage,
   ChatRoom,
-  ExtendedChatRoom,
   WsStatus,
   MessageType,
   CreateRoomRequest,
@@ -66,7 +61,7 @@ export function useChat(userId: string | null) {
    * 채팅방 생성
    */
   const createRoomMutation = useMutation({
-    mutationFn: (request: CreateRoomRequest) => createChatRoom(request),
+    mutationFn: (request: CreateRoomRequest) => api.chat.createRoom(request),
     onSuccess: (data) => {
       // 채팅방 목록 새로고침
       queryClient.invalidateQueries({ queryKey: ['chatRooms', userId] });
@@ -82,7 +77,7 @@ export function useChat(userId: string | null) {
     queryFn: () => {
       if (!userId) throw new Error('User ID is required');
       const request: GetChatRoomsRequest = { userId };
-      return getChatRooms(request);
+      return api.chat.getRooms(request);
     },
     enabled: !!userId,
     staleTime: 30000, // 30초 캐시
@@ -99,7 +94,7 @@ export function useChat(userId: string | null) {
       }
 
       // 채팅방 정보에서 seller, buyer 찾기
-      const rooms = chatRoomsQuery.data?.chatRooms;
+      const rooms = chatRoomsQuery.data?.rooms;
       const room = rooms?.find((r) => r.roomId === currentRoomId);
       
       if (!room) {
@@ -107,12 +102,14 @@ export function useChat(userId: string | null) {
       }
 
       const request: GetMessagesRequest = {
-        seller: String(room.seller),
-        buyer: String(room.buyer),
-        user: userId,
+        seller: room.sellerId,
+        buyer: room.buyerId,
+        userId,
+        roomId: room.roomId,
+        productId: room.productId,
       };
 
-      const response = await getChatMessages(request);
+      const response = await api.chat.getMessages(request);
       
       // 메시지를 타임스탬프 기준으로 정렬
       const sortedMessages = response.messages.sort(
@@ -170,14 +167,12 @@ export function useChat(userId: string | null) {
         queryClient.setQueryData<typeof chatRoomsQuery.data>(
           ['chatRooms', userId],
           (oldData) => {
-            if (!oldData?.chatRooms) return oldData;
+            if (!oldData?.rooms) return oldData;
 
             return {
               ...oldData,
-              chatRooms: oldData.chatRooms.map((room) =>
-                room.roomId === roomId
-                  ? { ...room } // 필요시 lastMessage 필드 추가 가능
-                  : room
+              rooms: oldData.rooms.map((room) =>
+                room.roomId === roomId ? { ...room } : room
               ),
             };
           }
@@ -330,7 +325,7 @@ export function useChat(userId: string | null) {
     isWebSocketConnected: stompClient.isConnected(),
 
     // 채팅방 목록
-    chatRooms: chatRoomsQuery.data?.chatRooms || [],
+    chatRooms: chatRoomsQuery.data?.rooms || [],
     isChatRoomsLoading: chatRoomsQuery.isLoading,
     refetchChatRooms: chatRoomsQuery.refetch,
 
@@ -349,4 +344,3 @@ export function useChat(userId: string | null) {
     unsubscribeFromRoom,
   };
 }
-

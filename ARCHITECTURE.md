@@ -135,8 +135,14 @@ client/
 │       └── ...
 │
 ├── lib/                          # 유틸리티 및 설정
-│   ├── api-client.ts             # API 클라이언트
-│   ├── axios.ts                  # Axios 인스턴스
+│   ├── api/                      # API 레이어
+│   │   ├── index.ts              # API Registry & 모드 전환
+│   │   ├── http-client.ts        # Axios 기반 HTTP 클라이언트
+│   │   ├── members.ts            # 회원 API 모듈
+│   │   ├── products.ts           # 상품 API 모듈
+│   │   ├── contracts.ts          # 계약 API 모듈
+│   │   ├── chat.ts               # 채팅 API 모듈
+│   │   └── mock/                 # Mock API 구현
 │   ├── sockets.ts                # WebSocket 관리
 │   ├── utils.ts                  # 유틸리티 함수
 │   ├── config.ts                 # 환경 설정
@@ -463,4 +469,3 @@ DealChain 클라이언트는 **현대적인 React 아키텍처**와 **견고한 
 - ✅ 접근성 준수
 
 이 아키텍처는 **확장 가능성**과 **유지보수성**을 최우선으로 설계되었습니다.
-

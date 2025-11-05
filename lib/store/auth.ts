@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { api } from '@/lib/api';
 import type { User } from '@/types';
 
 interface AuthState {
@@ -28,8 +29,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     // 서버에 로그아웃 요청 (HttpOnly 쿠키 삭제)
     try {
-      const { logout: logoutApi } = await import('@/lib/auth-api');
-      await logoutApi();
+      await api.members.logout();
     } catch (e) {
       console.error('Logout API call failed:', e);
     }
@@ -55,4 +55,3 @@ if (typeof window !== 'undefined') {
     }
   }
 }
-
