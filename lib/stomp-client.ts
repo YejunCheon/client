@@ -7,6 +7,7 @@ import type {
   MessageType,
 } from '@/types/chat';
 import { useMockApi } from '@/lib/api';
+import { config as appConfig } from '@/lib/config';
 import { mockChatMessages } from '@/mocks/data/chat';
 
 type MessageHandler = (message: ChatMessage) => void;
@@ -31,7 +32,7 @@ class StompClientManager {
   private pendingMessages: Array<{ message: WebSocketMessage; roomId: string }> = [];
 
   constructor(baseURL?: string) {
-    this.baseURL = baseURL || process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/ws';
+    this.baseURL = baseURL || appConfig.wsUrl;
   }
 
   /**
