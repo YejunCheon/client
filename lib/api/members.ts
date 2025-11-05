@@ -10,12 +10,13 @@ export function createMembersApi(client: AuthHttpClient = defaultClient): Member
 
       if (signature instanceof File || signature instanceof Blob) {
         const formData = new FormData();
+        formData.append('userId', payload.userId);
+        formData.append('password', payload.password);
         formData.append('name', payload.name);
-        formData.append('residentNumber', payload.residentNumber);
-        formData.append('phoneNumber', payload.phoneNumber);
+        formData.append('token', payload.token);
         formData.append('signatureImage', signature);
 
-        return client.postMultipart('/api/members/register', formData);
+        return client.postMultipart('/api/register', formData);
       }
 
       const data: RegisterRequest = {
@@ -23,15 +24,15 @@ export function createMembersApi(client: AuthHttpClient = defaultClient): Member
         signatureImage: signature,
       };
 
-      return client.post('/api/members/register', data);
+      return client.post('/api/register', data);
     },
 
     login(payload) {
-      return client.post('/api/members/login', payload);
+      return client.post('/api/login', payload);
     },
 
     logout() {
-      return client.post('/api/members/logout');
+      return client.post('/api/logout');
     },
 
     getProfile(memberId) {
