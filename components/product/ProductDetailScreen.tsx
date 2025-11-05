@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { useChat } from '@/hooks/use-chat';
 import { useAuthStore } from '@/lib/store/auth';
 import { useState } from 'react';
+import { normalizeImageUrl } from '@/lib/utils';
 
 export default function ProductDetailScreen() {
   const params = useParams();
@@ -102,11 +103,12 @@ export default function ProductDetailScreen() {
             {/* Product Image */}
             <div className="relative h-[447px] w-[467px] shrink-0 overflow-hidden rounded-lg">
               <Image
-                src={product.productImage || '/assets/mock_product_img.png'}
+                src={normalizeImageUrl(product.productImage)}
                 alt={product.productName}
                 fill
                 className="object-cover"
                 priority
+                unoptimized
               />
             </div>
 

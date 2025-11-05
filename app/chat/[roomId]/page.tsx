@@ -9,6 +9,7 @@ import { useProduct } from "@/hooks/use-products";
 import { useEffect, useMemo } from "react";
 import Image from "next/image";
 import { FileText } from "lucide-react";
+import { normalizeImageUrl } from "@/lib/utils";
 
 export default function ChatRoomPage() {
   const { isAuthenticated } = useAuthGuard();
@@ -126,10 +127,11 @@ export default function ChatRoomPage() {
                 {/* 상품 이미지 */}
                 <div className="relative h-[240px] w-full mb-5 overflow-hidden rounded-lg">
                   <Image
-                    src={product.productImage || '/assets/mock_product_img.png'}
+                    src={normalizeImageUrl(product.productImage)}
                     alt={product.productName}
                     fill
                     className="object-cover"
+                    unoptimized
                   />
                 </div>
 
