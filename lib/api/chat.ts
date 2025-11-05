@@ -1,6 +1,7 @@
 import type {
   ChatMessagesRequest,
   ChatRoomRequest,
+  ContractRequestRequest,
 } from '@/types/chat';
 import type { AuthHttpClient } from './http-client';
 import { httpClient as defaultClient } from './http-client';
@@ -37,6 +38,15 @@ function normalizeRoomsPayload(payload: { userId: number | string }) {
   };
 }
 
+function normalizeContractRequestPayload(payload: ContractRequestRequest) {
+  return {
+    roomId: payload.roomId,
+    sellerId: toNumeric(payload.sellerId),
+    buyerId: toNumeric(payload.buyerId),
+    productId: payload.productId ? toNumeric(payload.productId) : undefined,
+  };
+}
+
 export function createChatApi(client: AuthHttpClient = defaultClient): ChatApi {
   return {
     createRoom(payload) {
@@ -49,6 +59,10 @@ export function createChatApi(client: AuthHttpClient = defaultClient): ChatApi {
 
     getRooms(payload) {
       return client.post('/api/chat/getchatrooms', normalizeRoomsPayload(payload));
+    },
+
+    requestContractCreation(payload) {
+      return client.post('/api/chat/request-contract', normalizeContractRequestPayload(payload));
     },
   };
 }

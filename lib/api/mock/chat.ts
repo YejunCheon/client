@@ -9,6 +9,8 @@ import type {
   ChatRoomListResponse,
   ChatRoomRequest,
   ChatRoomResponse,
+  ContractRequestRequest,
+  ContractRequestResponse,
 } from '@/types/chat';
 import type { ChatApi } from '../types';
 import { generateId, respond } from './utils';
@@ -133,6 +135,17 @@ export function createMockChatApi(): ChatApi {
       return respond({
         rooms: ordered,
         success: true,
+      });
+    },
+
+    async requestContractCreation(
+      payload: ContractRequestRequest
+    ): Promise<ContractRequestResponse> {
+      // Mock: 구매자가 판매자에게 계약서 작성 요청 알람 전송
+      console.log('[Mock] Contract creation request:', payload);
+      return respond({
+        success: true,
+        message: '판매자에게 계약서 작성 요청이 전송되었습니다.',
       });
     },
   };

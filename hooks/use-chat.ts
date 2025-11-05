@@ -130,22 +130,37 @@ export function useChat(userId: string | null) {
    */
   const subscribeToRoom = useCallback(
     (roomId: string) => {
+      console.log('[useChat] subscribeToRoom called for room:', roomId);
       // 이미 구독 중이면 스킵
       if (unsubscribeRef.current.has(roomId)) {
+        console.log('[useChat] Already subscribed to room:', roomId);
         return;
       }
 
       if (!stompClient.isConnected()) {
-        console.warn('WebSocket not connected, cannot subscribe');
+        console.warn('[useChat] WebSocket not connected, cannot subscribe');
         return;
       }
 
+      console.log('[useChat] Subscribing to room:', roomId);
       const unsubscribe = stompClient.subscribe(roomId, (message: ChatMessage) => {
-        // 쿼리 캐시에 메시지 추가 (낙관적 업데이트)
+        console.log('[useChat] Received message via subscription:', message);
+        // 서버에서 받은 메시지를 UI에 표시
+        // (전송한 메시지도 서버에서 브로드캐스트되어 여기서 수신됩니다)
         queryClient.setQueryData<typeof messagesQuery.data>(
           ['chatMessages', roomId],
           (oldData) => {
-            if (!oldData) return oldData;
+            console.log('[useChat] Updating query cache. Old data:', oldData);
+            
+            // oldData가 없으면 초기 데이터 생성
+            if (!oldData) {
+              console.log('[useChat] No old data, creating new:', { roomId, messages: [message] });
+              return {
+                roomId,
+                messages: [message],
+                success: true,
+              };
+            }
 
             // 중복 메시지 방지
             const exists = oldData.messages.some(
@@ -154,12 +169,17 @@ export function useChat(userId: string | null) {
                 (m.clientMessageId && m.clientMessageId === message.clientMessageId)
             );
 
-            if (exists) return oldData;
+            if (exists) {
+              console.log('[useChat] Message already exists, skipping');
+              return oldData;
+            }
 
-            return {
+            const newData = {
               ...oldData,
               messages: [...oldData.messages, message],
             };
+            console.log('[useChat] Adding message. New message count:', newData.messages.length);
+            return newData;
           }
         );
 
@@ -197,6 +217,7 @@ export function useChat(userId: string | null) {
 
   /**
    * 메시지 전송
+   * 서버 응답을 받은 후에만 UI에 표시됩니다.
    */
   const sendMessage = useCallback(
     async (
@@ -204,77 +225,42 @@ export function useChat(userId: string | null) {
       content: string,
       type: MessageType = 'TALK'
     ): Promise<void> => {
+      console.log('[useChat] sendMessage called:', { roomId, content, userId, type });
       if (!userId) {
+        console.error('[useChat] User ID is required');
         throw new Error('User ID is required');
       }
 
-      // 낙관적 업데이트: 즉시 UI에 표시
-      const clientMessageId = crypto.randomUUID();
-      const optimisticMessage: ChatMessage = {
-        clientMessageId,
-        type,
-        roomId,
-        senderId: userId,
-        content,
-        timestamp: new Date().toISOString(),
-        status: 'pending',
-      };
-
-      queryClient.setQueryData<typeof messagesQuery.data>(
-        ['chatMessages', roomId],
-        (oldData) => {
-          if (!oldData) return oldData;
-
-          return {
-            ...oldData,
-            messages: [...oldData.messages, optimisticMessage],
-          };
+      // 구독이 안 되어 있으면 먼저 구독
+      if (!unsubscribeRef.current.has(roomId)) {
+        console.log('[useChat] Not subscribed to room, subscribing now:', roomId);
+        if (stompClient.isConnected()) {
+          subscribeToRoom(roomId);
+        } else {
+          console.warn('[useChat] WebSocket not connected, cannot subscribe');
+          throw new Error('WebSocket not connected');
         }
-      );
+      }
 
       // WebSocket으로 메시지 전송
+      // 서버에서 메시지를 처리하고 브로드캐스트하면,
+      // subscribeToRoom의 구독 핸들러를 통해 수신되어 UI에 표시됩니다.
       try {
+        const clientMessageId = crypto.randomUUID();
         const wsMessage = createWebSocketMessage(type, roomId, userId, content, clientMessageId);
+        console.log('[useChat] Created WebSocket message:', wsMessage);
+        console.log('[useChat] Calling stompClient.sendMessage...');
         stompClient.sendMessage(wsMessage);
-
-        // 전송 성공으로 상태 업데이트
-        queryClient.setQueryData<typeof messagesQuery.data>(
-          ['chatMessages', roomId],
-          (oldData) => {
-            if (!oldData) return oldData;
-
-            return {
-              ...oldData,
-              messages: oldData.messages.map((msg) =>
-                msg.clientMessageId === clientMessageId
-                  ? { ...msg, status: 'sent' as const }
-                  : msg
-              ),
-            };
-          }
-        );
+        console.log('[useChat] stompClient.sendMessage completed');
+        
+        // 전송 성공 여부는 서버 응답(구독 메시지)으로 확인됩니다.
+        // 에러가 발생하면 여기서 catch하여 처리합니다.
       } catch (error) {
-        console.error('Failed to send message:', error);
-
-        // 전송 실패로 상태 업데이트
-        queryClient.setQueryData<typeof messagesQuery.data>(
-          ['chatMessages', roomId],
-          (oldData) => {
-            if (!oldData) return oldData;
-
-            return {
-              ...oldData,
-              messages: oldData.messages.map((msg) =>
-                msg.clientMessageId === clientMessageId
-                  ? { ...msg, status: 'failed' as const }
-                  : msg
-              ),
-            };
-          }
-        );
+        console.error('[useChat] Failed to send message:', error);
+        throw error; // 에러를 상위로 전달하여 UI에서 처리할 수 있도록 함
       }
     },
-    [userId, queryClient]
+    [userId, subscribeToRoom]
   );
 
   /**
@@ -282,6 +268,7 @@ export function useChat(userId: string | null) {
    */
   const selectRoom = useCallback(
     async (roomId: string) => {
+      console.log('[useChat] selectRoom called:', roomId, 'wsStatus:', wsStatus);
       // 이전 방 구독 해제
       if (currentRoomId) {
         unsubscribeFromRoom(currentRoomId);
@@ -289,9 +276,13 @@ export function useChat(userId: string | null) {
 
       setCurrentRoomId(roomId);
 
-      // 새 방 구독
+      // 새 방 구독 (연결 상태 확인)
       if (wsStatus === 'connected') {
+        console.log('[useChat] WebSocket connected, subscribing to room:', roomId);
         subscribeToRoom(roomId);
+      } else {
+        console.log('[useChat] WebSocket not connected yet, status:', wsStatus);
+        // 연결 대기 중이면 연결 후 구독하도록 useEffect에서 처리됨
       }
     },
     [currentRoomId, wsStatus, subscribeToRoom, unsubscribeFromRoom]

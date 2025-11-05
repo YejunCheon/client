@@ -30,6 +30,8 @@ import type {
   ChatRoomListResponse,
   ChatRoomRequest,
   ChatRoomResponse,
+  ContractRequestRequest,
+  ContractRequestResponse,
 } from '@/types/chat';
 
 export interface MembersApi {
@@ -61,6 +63,7 @@ export interface ChatApi {
   createRoom(payload: ChatRoomRequest): Promise<ChatRoomResponse>;
   getMessages(payload: ChatMessagesRequest): Promise<ChatMessagesResponse>;
   getRooms(payload: { userId: number | string }): Promise<ChatRoomListResponse>;
+  requestContractCreation(payload: ContractRequestRequest): Promise<ContractRequestResponse>;
 }
 
 export interface ApiRegistry {

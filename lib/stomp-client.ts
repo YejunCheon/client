@@ -6,6 +6,8 @@ import type {
   ChatMessage,
   MessageType,
 } from '@/types/chat';
+import { useMockApi } from '@/lib/api';
+import { mockChatMessages } from '@/mocks/data/chat';
 
 type MessageHandler = (message: ChatMessage) => void;
 type StatusHandler = (status: WsStatus) => void;
@@ -38,6 +40,16 @@ class StompClientManager {
   connect(token?: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.client?.connected) {
+        resolve();
+        return;
+      }
+
+      // Mock 환경에서는 즉시 연결 성공 처리
+      if (useMockApi()) {
+        console.log('[STOMP] Mock mode: Connected');
+        this.setStatus('connected');
+        this.reconnectAttempts = 0;
+        this.processPendingMessages();
         resolve();
         return;
       }
@@ -135,7 +147,8 @@ class StompClientManager {
    * 특정 채팅방 구독
    */
   subscribe(roomId: string, onMessage: MessageHandler): () => void {
-    if (!this.client?.connected) {
+    // Mock 환경에서는 클라이언트 연결 없이도 구독 가능
+    if (!useMockApi() && !this.client?.connected) {
       throw new Error('WebSocket not connected. Call connect() first.');
     }
 
@@ -153,7 +166,32 @@ class StompClientManager {
       };
     }
 
-    const subscription = this.client.subscribe(
+    // Mock 환경에서는 핸들러만 등록 (실제 WebSocket 구독 없음)
+    if (useMockApi()) {
+      const handlers = this.messageHandlers.get(roomId) || new Set();
+      handlers.add(onMessage);
+      this.messageHandlers.set(roomId, handlers);
+
+      // Mock 구독 객체 생성 (실제 subscription은 아니지만 인터페이스 호환)
+      const mockSubscription = {
+        unsubscribe: () => {
+          this.subscriptions.delete(roomId);
+        },
+      } as StompSubscription;
+
+      this.subscriptions.set(roomId, mockSubscription);
+      console.log(`[STOMP] Mock: Subscribed to room: ${roomId}`);
+
+      return () => {
+        handlers.delete(onMessage);
+        if (handlers.size === 0) {
+          this.unsubscribe(roomId);
+        }
+      };
+    }
+
+    // 실제 WebSocket 환경
+    const subscription = this.client!.subscribe(
       `/sub/chat/room/${roomId}`,
       (message: IMessage) => {
         try {
@@ -206,6 +244,44 @@ class StompClientManager {
    * 메시지 전송
    */
   sendMessage(message: WebSocketMessage): void {
+    console.log('[STOMP] sendMessage called:', { roomId: message.roomId, content: message.message, isMock: useMockApi() });
+    
+    // Mock 환경에서는 mock 데이터에 추가하고 구독 핸들러 호출
+    if (useMockApi()) {
+      const chatMessage: ChatMessage = {
+        messageId: Date.now(), // 임시 ID
+        clientMessageId: message.clientMessageId,
+        type: message.type,
+        roomId: message.roomId,
+        senderId: message.senderId,
+        content: message.message,
+        message: message.message,
+        timestamp: message.timestamp || new Date().toISOString(),
+      };
+
+      console.log('[STOMP] Mock: Creating message:', chatMessage);
+
+      // Mock 데이터에 메시지 추가
+      if (!mockChatMessages[message.roomId]) {
+        mockChatMessages[message.roomId] = [];
+      }
+      mockChatMessages[message.roomId].push(chatMessage);
+      console.log('[STOMP] Mock: Message added to mockChatMessages. Room:', message.roomId, 'Total messages:', mockChatMessages[message.roomId].length);
+
+      // 구독 핸들러들에게 메시지 브로드캐스트 (약간의 지연을 두어 실제 서버 응답 시뮬레이션)
+      setTimeout(() => {
+        const handlers = this.messageHandlers.get(message.roomId) || new Set();
+        console.log('[STOMP] Mock: Broadcasting to handlers. Room:', message.roomId, 'Handlers count:', handlers.size);
+        handlers.forEach((handler) => {
+          console.log('[STOMP] Mock: Calling handler with message:', chatMessage);
+          handler(chatMessage);
+        });
+        console.log(`[STOMP] Mock: Message sent and broadcasted to room ${message.roomId}`);
+      }, 100); // 100ms 지연으로 실제 서버 응답 시뮬레이션
+
+      return;
+    }
+
     if (!this.client?.connected) {
       // 연결되지 않은 경우 대기열에 추가
       this.pendingMessages.push({ message, roomId: message.roomId });
@@ -268,6 +344,10 @@ class StompClientManager {
    * 연결 여부
    */
   isConnected(): boolean {
+    // Mock 환경에서는 연결된 상태로 간주
+    if (useMockApi()) {
+      return this.status === 'connected';
+    }
     return this.client?.connected ?? false;
   }
 
@@ -279,6 +359,17 @@ class StompClientManager {
       const { message } = this.pendingMessages.shift()!;
       this.sendMessage(message);
     }
+  }
+
+  /**
+   * 특정 방의 구독 핸들러들에게 메시지 브로드캐스트 (Mock 환경에서 사용)
+   */
+  broadcastMessage(roomId: string, message: ChatMessage): void {
+    const handlers = this.messageHandlers.get(roomId) || new Set();
+    console.log(`[STOMP] Broadcasting message to room ${roomId}, handlers count: ${handlers.size}`);
+    handlers.forEach((handler) => {
+      handler(message);
+    });
   }
 
   /**
