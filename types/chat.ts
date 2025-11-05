@@ -71,6 +71,18 @@ export interface ChatRoomListResponse {
   message?: string;
 }
 
+export interface ContractRequestRequest {
+  roomId: string;
+  sellerId: number | string;
+  buyerId: number | string;
+  productId?: number | string;
+}
+
+export interface ContractRequestResponse {
+  success: boolean;
+  message?: string;
+}
+
 // Backward compatible aliases
 export type CreateRoomRequest = ChatRoomRequest;
 export type CreateRoomResponse = ChatRoomResponse;

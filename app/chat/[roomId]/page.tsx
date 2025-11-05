@@ -62,6 +62,12 @@ export default function ChatRoomPage() {
     }));
   }, [messages, user?.id]);
 
+  // 사용자가 판매자인지 구매자인지 확인
+  const isSeller = useMemo(() => {
+    if (!currentRoom || !user?.id) return false;
+    return user.id.toString() === currentRoom.sellerId.toString();
+  }, [currentRoom, user?.id]);
+
   // 메시지 전송 핸들러
   const handleSendMessage = (text: string) => {
     if (roomId) {
@@ -69,7 +75,7 @@ export default function ChatRoomPage() {
     }
   };
 
-  // 계약서 작성하기 버튼 클릭
+  // 판매자: 계약서 초안 작성하기 (기존 로직)
   const handleCreateContract = () => {
     if (!currentRoom || !user?.id) return;
     
@@ -78,6 +84,25 @@ export default function ChatRoomPage() {
       : currentRoom.sellerId.toString();
     
     router.push(`/contracts/create?roomId=${roomId}&buyerId=${buyerId}&productId=${productId}`);
+  };
+
+  // 구매자: 계약서 작성 제안하기
+  const handleRequestContractCreation = async () => {
+    if (!currentRoom || !user?.id || !productId) return;
+    
+    try {
+      const { api } = await import('@/lib/api');
+      await api.chat.requestContractCreation({
+        roomId,
+        sellerId: currentRoom.sellerId,
+        buyerId: currentRoom.buyerId,
+        productId,
+      });
+      alert('판매자에게 계약서 작성 요청이 전송되었습니다.');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '요청 전송에 실패했습니다.';
+      alert(errorMessage);
+    }
   };
 
   if (!isAuthenticated) {
@@ -144,15 +169,27 @@ export default function ChatRoomPage() {
                   </div>
 
                   {/* 계약서 작성하기 버튼 */}
-                  <button
-                    onClick={handleCreateContract}
-                    className="bg-[#2487f8] rounded-[15px] px-5 py-[11px] flex items-center justify-center gap-2 text-white hover:bg-[#1e6fd8] transition-colors w-full"
-                  >
-                    <FileText className="w-5 h-5" />
-                    <span className="text-[16px] font-bold leading-[26px]">
-                      계약서 작성하기
-                    </span>
-                  </button>
+                  {isSeller ? (
+                    <button
+                      onClick={handleCreateContract}
+                      className="bg-[#2487f8] rounded-[15px] px-5 py-[11px] flex items-center justify-center gap-2 text-white hover:bg-[#1e6fd8] transition-colors w-full"
+                    >
+                      <FileText className="w-5 h-5" />
+                      <span className="text-[16px] font-bold leading-[26px]">
+                        계약서 초안 작성하기
+                      </span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleRequestContractCreation}
+                      className="bg-[#2487f8] rounded-[15px] px-5 py-[11px] flex items-center justify-center gap-2 text-white hover:bg-[#1e6fd8] transition-colors w-full"
+                    >
+                      <FileText className="w-5 h-5" />
+                      <span className="text-[16px] font-bold leading-[26px]">
+                        계약서 작성 제안하기
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
