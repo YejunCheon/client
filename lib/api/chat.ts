@@ -136,10 +136,16 @@ export function createChatApi(client: AuthHttpClient = defaultClient): ChatApi {
     },
 
     async getRooms(payload) {
-      const response = await client.post<
-        Partial<ChatRoomListResponse> & { chatRooms?: Partial<ChatRoom>[] }
-      >('/api/chat/getchatrooms', normalizeRoomsPayload(payload));
-      return normalizeRoomsResponse(response);
+      try {
+        const normalizedPayload = normalizeRoomsPayload(payload);
+        const response = await client.post<
+          Partial<ChatRoomListResponse> & { chatRooms?: Partial<ChatRoom>[] }
+        >('/api/chat/getchatrooms', normalizedPayload);
+        return normalizeRoomsResponse(response);
+      } catch (error) {
+        console.error('[chatApi.getRooms] Error:', error);
+        throw error;
+      }
     },
 
     requestContractCreation(payload) {

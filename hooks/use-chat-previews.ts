@@ -162,10 +162,15 @@ export function useChatPreviews(userId: string | null) {
       if (!userId) {
         return [];
       }
-      const response = await api.chat.getRooms({ userId });
-      // response.rooms가 배열인지 확인하고, 아니면 빈 배열 반환
-      const rooms = response?.rooms;
-      return Array.isArray(rooms) ? rooms : [];
+      try {
+        const response = await api.chat.getRooms({ userId });
+        // response.rooms가 배열인지 확인하고, 아니면 빈 배열 반환
+        const rooms = response?.rooms;
+        return Array.isArray(rooms) ? rooms : [];
+      } catch (error) {
+        console.error('[useChatPreviews] Failed to fetch chat rooms:', error);
+        return [];
+      }
     },
     enabled: Boolean(userId),
     staleTime: 60 * 1000,
