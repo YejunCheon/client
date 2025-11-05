@@ -20,8 +20,8 @@ function toMemberResponse(member: MockMemberRecord): GetMemberResponse {
   return {
     success: true,
     member: {
+      memberId: member.memberId,
       id: member.id,
-      userId: member.userId,
       name: member.name,
       ci: member.ci,
       signatureImage: member.signatureImage ?? null,
@@ -51,14 +51,14 @@ function ensureSignatureBlob(memberId: number, signature?: string | null): Blob 
 export function createMockMembersApi(): MembersApi {
   return {
     async register(payload: RegisterRequest): Promise<RegisterResponse> {
-      if (!payload.userId || !payload.password || !payload.token) {
+      if (!payload.id || !payload.password || !payload.token) {
         return respond({
           success: false,
           message: '필수 값이 누락되었습니다.',
         });
       }
 
-      const normalizedUserId = payload.userId.trim();
+      const normalizedUserId = payload.id.trim();
 
       if (!normalizedUserId) {
         return respond({
@@ -68,7 +68,7 @@ export function createMockMembersApi(): MembersApi {
       }
 
       const existingUserId = mockMembers.some(
-        (member) => member.userId.toLowerCase() === normalizedUserId.toLowerCase()
+        (member) => member.id.toLowerCase() === normalizedUserId.toLowerCase()
       );
 
       if (existingUserId) {
@@ -121,7 +121,7 @@ export function createMockMembersApi(): MembersApi {
       }
 
       const nextId =
-        mockMembers.reduce((max, member) => Math.max(max, member.id), 0) + 1;
+        mockMembers.reduce((max, member) => Math.max(max, member.memberId), 0) + 1;
 
       let signatureImagePath: string;
 
@@ -135,8 +135,8 @@ export function createMockMembersApi(): MembersApi {
       }
 
       const newMember: MockMemberRecord = {
-        id: nextId,
-        userId: normalizedUserId,
+        memberId: nextId,
+        id: normalizedUserId,
         name: verifiedName,
         ci,
         signatureImage: signatureImagePath,
@@ -148,8 +148,9 @@ export function createMockMembersApi(): MembersApi {
       const response: RegisterResponse = {
         success: true,
         message: '회원가입이 완료되었습니다.',
-        memberId: newMember.id,
-        userId: newMember.userId,
+        memberId: newMember.memberId,
+        id: newMember.id,
+        userId: newMember.id,
         name: newMember.name,
         ci: newMember.ci,
         signatureImage: signatureImagePath,
@@ -159,14 +160,14 @@ export function createMockMembersApi(): MembersApi {
     },
 
     async login(payload: LoginRequest): Promise<LoginResponse> {
-      if (!payload.userId || !payload.password) {
+      if (!payload.id || !payload.password) {
         return respond({
           success: false,
           message: '아이디와 비밀번호를 입력해주세요.',
         });
       }
 
-      const member = mockMembers.find((m) => m.userId === payload.userId);
+      const member = mockMembers.find((m) => m.id === payload.id);
 
       if (!member) {
         return respond({
@@ -185,11 +186,12 @@ export function createMockMembersApi(): MembersApi {
       return respond({
         success: true,
         message: '로그인 성공',
-        memberId: member.id,
-        userId: member.userId,
+        memberId: member.memberId,
+        id: member.id,
+        userId: member.id,
         name: member.name,
         ci: member.ci,
-        token: `mock-token-${member.id}`,
+        token: `mock-token-${member.memberId}`,
         signatureImage: member.signatureImage ?? null,
       });
     },
@@ -202,14 +204,14 @@ export function createMockMembersApi(): MembersApi {
     },
 
     async getProfile(memberId: number): Promise<GetMemberResponse> {
-      const member = mockMembers.find((m) => m.id === memberId);
+      const member = mockMembers.find((m) => m.memberId === memberId);
 
       if (!member) {
         return respond({
           success: false,
           member: {
-            id: memberId,
-            userId: '',
+            memberId,
+            id: '',
             name: '',
             ci: '',
             signatureImage: null,
@@ -221,7 +223,7 @@ export function createMockMembersApi(): MembersApi {
     },
 
     async getSignature(memberId: number): Promise<Blob> {
-      const member = mockMembers.find((m) => m.id === memberId);
+      const member = mockMembers.find((m) => m.memberId === memberId);
       return respond(
         ensureSignatureBlob(memberId, member?.signatureImage ?? null)
       );
