@@ -1,5 +1,7 @@
 export interface User {
+  /** Member identifier returned from the backend (numeric but stored as string for convenience) */
   id: string;
+  /** Login identifier (a.k.a. username). Legacy alias `userId` is kept for backwards compatibility. */
   userId: string;
   name: string;
   ci?: string;
@@ -9,25 +11,29 @@ export interface User {
 }
 
 export interface Member {
-  id: number;
-  userId: string;
+  memberId: number;
+  /** Login identifier */
+  id: string;
   name: string;
   ci: string;
   signatureImage?: string | null;
 }
 
 export interface RegisterRequest {
-  userId: string;
+  /** Login identifier */
+  id: string;
   password: string;
-  name: string;
-  signatureImage: File | Blob | string;
   token: string;
+  signatureImage: File | Blob | string;
+  /** Optional: retain name input when available for legacy flows */
+  name?: string;
 }
 
 export interface RegisterResponse {
   success: boolean;
   message: string;
   memberId?: number;
+  id?: string;
   userId?: string;
   name?: string;
   ci?: string;
@@ -35,7 +41,8 @@ export interface RegisterResponse {
 }
 
 export interface LoginRequest {
-  userId: string;
+  /** Login identifier */
+  id: string;
   password: string;
 }
 
@@ -43,6 +50,7 @@ export interface LoginResponse {
   success: boolean;
   message: string;
   memberId?: number;
+  id?: string;
   userId?: string;
   name?: string;
   token?: string;
@@ -62,6 +70,7 @@ export interface LogoutResponse {
 
 export interface AuthResponse {
   success: boolean;
+  id?: string;
   userId?: string;
   name?: string;
   message?: string;
