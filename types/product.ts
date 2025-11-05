@@ -6,13 +6,15 @@ export interface Product {
   price: string;
   productImage: string;
   memberId: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateProductPayload {
   productName: string;
   price: string;
   description: string;
-  productImage: File | string;
+  productImage: File | Blob | string;
   title: string;
 }
 
@@ -22,6 +24,7 @@ export interface CreateProductResponse {
   productName: string;
   productId: number;
   productImage: string;
+  title: string;
 }
 
 export interface DeleteProductResponse {
@@ -37,10 +40,11 @@ export interface ProductResponse {
 export interface ProductListResponse {
   success: boolean;
   count: number;
-  product: Product[];
+  products: Product[];
 }
 
 export interface MemberProductResponse {
   success: boolean;
-  product: Product[];
+  count: number;
+  products: Product[];
 }

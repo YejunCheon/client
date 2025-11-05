@@ -1,4 +1,5 @@
-// 계약서 데이터 구조 (POST /create 응답의 data 필드)
+// ===== 계약서 데이터 모델 =====
+
 export interface ContractData {
   parties: {
     sellerName: string | null;
@@ -20,55 +21,67 @@ export interface ContractData {
   specialTerms?: string;
 }
 
-// 계약서 생성 요청 (POST /create)
-export interface CreateContractRequest {
-  sellerId: string;
-  buyerId: string;
+// ===== 생성/서명 관련 =====
+
+export type EntityId = number | string;
+
+export interface ContractCreateRequest {
   roomId?: string;
+  sellerId: EntityId;
+  buyerId: EntityId;
   deviceInfo?: string;
 }
 
-// 계약서 생성 응답 (POST /create)
-export interface CreateContractResponse {
-  success: boolean;
-  data: string; // JSON 형태의 계약서 데이터 (ContractData를 JSON.stringify한 것)
-}
-
-// 계약서 조회 응답 (GET /{id}) - PDF 반환
-// 실제로는 Blob이나 ArrayBuffer를 받지만, 타입은 별도로 처리할 수 있음
-
-// 계약서 수정 요청 (PUT /{id})
-export interface UpdateContractRequest {
-  pdf: Blob | File | string; // PDF 파일
-}
-
-// 서명 요청 (POST /sign)
-export interface SignContractRequest {
-  roomId: string;
-  productId: number;
-  contract: string; // JSON 내용
-  deviceInfo?: string;
-}
-
-// 서명 응답 (POST /sign)
-export interface SignContractResponse {
+export interface ContractCreateResponse {
   isSuccess: boolean;
-  data: string; // 오류 정보
-  bothSign: boolean; // 둘 다 서명했는지
+  data: ContractData | Record<string, unknown> | string;
+  message?: string;
 }
 
+export type CreateContractRequest = ContractCreateRequest;
+export type CreateContractResponse = ContractCreateResponse;
 
-// 기존 계약서 타입 (리스트나 다른 용도)
-export interface ContractDraft {
-  id: string;
+export interface ContractSignRequest {
+  roomId: string;
+  productId: EntityId;
+  deviceInfo?: string;
+}
+
+export interface ContractSignResponse {
+  isSuccess: boolean;
+  data?: string | Record<string, unknown>;
+  isBothSigned?: boolean;
+  message?: string;
+}
+
+export type SignContractRequest = ContractSignRequest;
+export type SignContractResponse = ContractSignResponse;
+
+export interface ContractUploadPayload {
+  pdf: File | Blob;
+  sellerId?: EntityId;
+  buyerId?: EntityId;
   roomId?: string;
-  sellerId: string;
-  buyerId: string;
-  productId?: string;
-  terms: Record<string, string | number | boolean>;
-  summary?: string;
-  status: ContractStatus;
 }
+
+export interface ContractUploadResponse {
+  success: boolean;
+  message: string;
+  contractId: EntityId;
+  filePath: string;
+  sellerId?: EntityId;
+  buyerId?: EntityId;
+  roomId?: string;
+  encryptedHash: string;
+}
+
+export interface ContractDeleteResponse {
+  success: boolean;
+  message: string;
+  contractId: EntityId;
+}
+
+// ===== 상태/리스트 모델 =====
 
 export enum ContractStatus {
   DRAFT = 'draft',
@@ -77,6 +90,32 @@ export enum ContractStatus {
   SIGNED = 'signed',
   VOID = 'void',
 }
+
+export interface ContractSummary {
+  id: string | number;
+  roomId?: string;
+  sellerId: EntityId;
+  sellerName?: string | null;
+  buyerId: EntityId;
+  buyerName?: string | null;
+  productId?: EntityId;
+  summary?: string;
+  status: ContractStatus;
+  updatedAt?: string;
+}
+
+export interface ContractListItem extends ContractSummary {}
+
+export interface ContractListResponse {
+  contracts: ContractListItem[];
+  success: boolean;
+  message?: string;
+  count?: number;
+}
+
+export type ContractDraft = ContractSummary;
+
+// ===== 부가 모델 =====
 
 export interface ContractFile {
   id: string;
@@ -89,7 +128,7 @@ export interface ContractFile {
 export interface AuditEvent {
   id: string;
   action: string;
-  userId: string;
+  userId: EntityId;
   ip?: string;
   ua?: string;
   at: string;
@@ -98,26 +137,6 @@ export interface AuditEvent {
 
 export interface ContractResponse {
   success: boolean;
-  contract?: ContractDraft;
+  contract?: ContractSummary;
   message?: string;
-}
-
-export interface ContractListItem {
-  id: string;
-  roomId?: string;
-  sellerId: string;
-  sellerName?: string | null;
-  buyerId: string;
-  buyerName?: string | null;
-  productId?: string;
-  summary?: string;
-  status: ContractStatus;
-  updatedAt?: string;
-}
-
-export interface ContractListResponse {
-  contracts: ContractListItem[];
-  success: boolean;
-  message?: string;
-  count?: number;
 }
