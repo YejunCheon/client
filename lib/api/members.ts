@@ -3,6 +3,21 @@ import { httpClient as defaultClient } from './http-client';
 import type { AuthHttpClient } from './http-client';
 import type { MembersApi } from './types';
 
+function createRegisterJsonPayload(payload: RegisterRequest) {
+  const data: Record<string, unknown> = {
+    id: payload.id,
+    password: payload.password,
+    token: payload.token,
+    signatureImage: payload.signatureImage,
+  };
+
+  if (payload.name) {
+    data.name = payload.name;
+  }
+
+  return data;
+}
+
 export function createMembersApi(client: AuthHttpClient = defaultClient): MembersApi {
   return {
     async register(payload) {
@@ -10,29 +25,35 @@ export function createMembersApi(client: AuthHttpClient = defaultClient): Member
 
       if (signature instanceof File || signature instanceof Blob) {
         const formData = new FormData();
-        formData.append('userId', payload.userId);
+        formData.append('id', payload.id);
         formData.append('password', payload.password);
-        formData.append('name', payload.name);
         formData.append('token', payload.token);
         formData.append('signatureImage', signature);
 
-        return client.postMultipart('/api/register', formData);
+        if (payload.name) {
+          formData.append('name', payload.name);
+        }
+
+        return client.postMultipart('/api/members/register', formData);
       }
 
-      const data: RegisterRequest = {
+      const data = createRegisterJsonPayload({
         ...payload,
         signatureImage: signature,
-      };
+      });
 
-      return client.post('/api/register', data);
+      return client.post('/api/members/register', data);
     },
 
     login(payload) {
-      return client.post('/api/login', payload);
+      return client.post('/api/members/login', {
+        id: payload.id,
+        password: payload.password,
+      });
     },
 
     logout() {
-      return client.post('/api/logout');
+      return client.post('/api/members/logout');
     },
 
     getProfile(memberId) {

@@ -1,6 +1,11 @@
 import type {
+  ChatMessage,
   ChatMessagesRequest,
+  ChatMessagesResponse,
+  ChatRoom,
+  ChatRoomListResponse,
   ChatRoomRequest,
+  ChatRoomResponse,
   ContractRequestRequest,
 } from '@/types/chat';
 import type { AuthHttpClient } from './http-client';
@@ -47,18 +52,94 @@ function normalizeContractRequestPayload(payload: ContractRequestRequest) {
   };
 }
 
+function normalizeChatRoom(room: Partial<ChatRoom>): ChatRoom {
+  const toNumber = (value: unknown): number => {
+    if (typeof value === 'number') return value;
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  };
+
+  return {
+    roomId: room.roomId ?? '',
+    sellerId: toNumber(room.sellerId),
+    buyerId: toNumber(room.buyerId),
+    productId: toNumber(room.productId),
+    createdAt: room.createdAt,
+    updatedAt: room.updatedAt ?? room.lastMessageTime,
+    lastMessage: room.lastMessage,
+    lastMessageTime: room.lastMessageTime ?? room.updatedAt,
+  };
+}
+
+function normalizeMessagesResponse(
+  payload: ChatMessagesRequest,
+  response: Partial<ChatMessagesResponse>
+): ChatMessagesResponse {
+  const messages: ChatMessage[] = Array.isArray(response.messages)
+    ? response.messages
+    : [];
+
+  return {
+    roomId: response.roomId ?? payload.roomId ?? '',
+    messages,
+    success: response.success ?? true,
+  };
+}
+
+function normalizeRoomsResponse(response: Partial<ChatRoomListResponse> & {
+  chatRooms?: Partial<ChatRoom>[];
+}): ChatRoomListResponse {
+  const rawRooms = Array.isArray(response.rooms)
+    ? response.rooms
+    : Array.isArray(response.chatRooms)
+    ? response.chatRooms
+    : [];
+
+  return {
+    rooms: rawRooms.map(normalizeChatRoom),
+    success: response.success ?? true,
+    message: response.message,
+  };
+}
+
+function normalizeCreateRoomResponse(
+  response: Partial<ChatRoomResponse>
+): ChatRoomResponse {
+  return {
+    roomId: response.roomId ?? '',
+    sellerId: response.sellerId,
+    buyerId: response.buyerId,
+    productId: response.productId,
+    createdAt: response.createdAt,
+    created: response.created ?? true,
+    isSuccess: response.isSuccess ?? true,
+    reason: response.reason,
+  };
+}
+
 export function createChatApi(client: AuthHttpClient = defaultClient): ChatApi {
   return {
-    createRoom(payload) {
-      return client.post('/api/chat/createroom', normalizeRoomPayload(payload));
+    async createRoom(payload) {
+      const response = await client.post<Partial<ChatRoomResponse>>(
+        '/api/chat/createroom',
+        normalizeRoomPayload(payload)
+      );
+      return normalizeCreateRoomResponse(response);
     },
 
-    getMessages(payload) {
-      return client.post('/api/chat/getmessages', normalizeMessagesPayload(payload));
+    async getMessages(payload) {
+      const response = await client.post<Partial<ChatMessagesResponse>>(
+        '/api/chat/getmessages',
+        normalizeMessagesPayload(payload)
+      );
+      return normalizeMessagesResponse(payload, response);
     },
 
-    getRooms(payload) {
-      return client.post('/api/chat/getchatrooms', normalizeRoomsPayload(payload));
+    async getRooms(payload) {
+      const response = await client.post<
+        Partial<ChatRoomListResponse> & { chatRooms?: Partial<ChatRoom>[] }
+      >('/api/chat/getchatrooms', normalizeRoomsPayload(payload));
+      return normalizeRoomsResponse(response);
     },
 
     requestContractCreation(payload) {
