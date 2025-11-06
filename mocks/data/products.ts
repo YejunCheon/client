@@ -8,7 +8,7 @@ export const mockProducts: Product[] = [
     description: 'Product 1 Description',
     price: '10000',
     productImage: '/assets/mock_product_img.png',
-    memberId: 1,
+    memberId: 101, // seller101
   },
   {
     id: 2,
@@ -17,7 +17,7 @@ export const mockProducts: Product[] = [
     description: 'Product 2 Description',
     price: '20000',
     productImage: '/assets/mock_product_img.png',
-    memberId: 1,
+    memberId: 101, // seller101
   },
   {
     id: 3,
@@ -26,7 +26,7 @@ export const mockProducts: Product[] = [
     description: 'Product 3 Description',
     price: '30000',
     productImage: '/assets/mock_product_img.png',
-    memberId: 2,
+    memberId: 201, // buyer201
   },
     {
     id: 4,
@@ -35,7 +35,7 @@ export const mockProducts: Product[] = [
     description: 'Product 4 Description',
     price: '40000',
     productImage: '/assets/mock_product_img.png',
-    memberId: 2,
+    memberId: 201, // buyer201
   },
     {
     id: 5,
@@ -44,6 +44,6 @@ export const mockProducts: Product[] = [
     description: 'Product 5 Description',
     price: '50000',
     productImage: '/assets/mock_product_img.png',
-    memberId: 2,
+    memberId: 201, // buyer201
   },
 ];
