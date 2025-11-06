@@ -1,12 +1,17 @@
-// 브라우저 환경에서는 프록시를 통해 같은 도메인으로 요청하므로 상대 경로 사용
-// 서버 사이드 렌더링(SSR)에서는 원래 서버 URL 사용
+// API URL 설정
+// http 모드: 실제 백엔드 서버 URL 사용
+// mock 모드: 빈 문자열 (MSW가 상대 경로로 요청을 가로챔)
 const getApiUrl = () => {
-  if (typeof window !== 'undefined') {
-    // 브라우저 환경: 프록시를 통해 같은 도메인으로 요청
+  const apiMode = (process.env.NEXT_PUBLIC_API_MODE || 'http') as 'mock' | 'http';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+  
+  // Mock 모드일 때는 빈 문자열 반환 (MSW가 처리)
+  if (apiMode === 'mock') {
     return '';
   }
-  // SSR 환경: 원래 서버 URL 사용
-  return process.env.NEXT_PUBLIC_API_URL || '';
+  
+  // HTTP 모드일 때는 실제 백엔드 URL 사용
+  return apiUrl;
 };
 
 export const config = {
