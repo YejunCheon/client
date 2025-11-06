@@ -105,6 +105,25 @@ class StompClientManager {
           // SockJS 이벤트 리스너 추가 (디버깅용)
           sockjs.onopen = () => {
             console.log('[STOMP] SockJS connection opened');
+            console.log('[STOMP] SockJS readyState:', sockjs.readyState);
+            console.log('[STOMP] SockJS protocol:', (sockjs as any).protocol);
+            console.log('[STOMP] SockJS transport:', (sockjs as any).transport);
+          };
+
+          sockjs.onmessage = (event) => {
+            console.log('[STOMP] SockJS message received:', event.data?.substring(0, 100));
+          };
+
+          sockjs.onerror = (error) => {
+            console.error('[STOMP] SockJS error:', error);
+          };
+
+          sockjs.onclose = (event) => {
+            console.log('[STOMP] SockJS connection closed:', {
+              code: event.code,
+              reason: event.reason,
+              wasClean: event.wasClean,
+            });
           };
 
           return sockjs as any;
@@ -280,15 +299,28 @@ class StompClientManager {
       return;
     }
 
+    const subscriptionPath = `/sub/chat/room/${roomId}`;
+    console.log(`[STOMP] Attempting to subscribe to: ${subscriptionPath}`);
+    
     const subscription = this.client.subscribe(
-      `/sub/chat/room/${roomId}`,
+      subscriptionPath,
       (message: IMessage) => {
+        console.log(`[STOMP] ✅ Message received from server on ${subscriptionPath}:`, {
+          destination: message.headers.destination,
+          bodyLength: message.body?.length,
+          bodyPreview: message.body?.substring(0, 200),
+        });
         try {
           const payload: ChatMessage = JSON.parse(message.body);
+          console.log(`[STOMP] Parsed message payload:`, payload);
           const registeredHandlers = this.messageHandlers.get(roomId) || new Set<MessageHandler>();
-          registeredHandlers.forEach((handler) => handler(payload));
+          console.log(`[STOMP] Calling ${registeredHandlers.size} handler(s) for room ${roomId}`);
+          registeredHandlers.forEach((handler) => {
+            console.log(`[STOMP] Calling handler with message:`, payload);
+            handler(payload);
+          });
         } catch (error) {
-          console.error('[STOMP] Failed to parse message:', error);
+          console.error('[STOMP] Failed to parse message:', error, 'Raw body:', message.body);
           this.handleError('Failed to parse incoming message');
         }
       },
@@ -298,7 +330,8 @@ class StompClientManager {
     );
 
     this.subscriptions.set(roomId, subscription);
-    console.log(`[STOMP] Subscribed to room: ${roomId}`);
+    console.log(`[STOMP] ✅ Successfully subscribed to room: ${roomId} at ${subscriptionPath}`);
+    console.log(`[STOMP] Active subscriptions count: ${this.subscriptions.size}`);
   }
 
   private processPendingSubscriptions(): void {
@@ -370,10 +403,22 @@ class StompClientManager {
       return;
     }
 
-    if (!this.client?.connected) {
+    // 실제 연결 상태 확인
+    const isActuallyConnected = this.client?.connected === true;
+    const statusCheck = this.status === 'connected';
+    
+    console.log('[STOMP] Connection check:', {
+      clientExists: !!this.client,
+      clientConnected: this.client?.connected,
+      status: this.status,
+      isActuallyConnected,
+      statusCheck,
+    });
+
+    if (!isActuallyConnected || !statusCheck) {
       // 연결되지 않은 경우 대기열에 추가
       this.pendingMessages.push({ message, roomId: message.roomId });
-      console.warn('[STOMP] Not connected, message queued');
+      console.warn('[STOMP] Not connected, message queued. Client connected:', this.client?.connected, 'Status:', this.status);
       return;
     }
 
@@ -384,17 +429,58 @@ class StompClientManager {
         senderId: message.senderId,
         message: message.message,
         timestamp: message.timestamp || new Date().toISOString(),
+        clientMessageId: message.clientMessageId,
       });
 
-      this.client.publish({
+      console.log('[STOMP] Publishing message:', {
         destination: '/pub/chat/message',
-        body,
+        bodyLength: body.length,
+        bodyPreview: body.substring(0, 200),
+        clientConnected: this.client.connected,
+        clientState: this.client.state,
       });
 
-      console.log(`[STOMP] Message sent to room ${message.roomId}`);
+      // STOMP publish 호출 전 최종 확인
+      if (!this.client.connected) {
+        console.error('[STOMP] Client not connected at publish time!');
+        throw new Error('STOMP client is not connected');
+      }
+
+      // 구독 상태 확인
+      const isSubscribed = this.subscriptions.has(message.roomId);
+      const subscriptionPath = `/sub/chat/room/${message.roomId}`;
+      console.log(`[STOMP] Subscription check before publish:`, {
+        roomId: message.roomId,
+        isSubscribed,
+        subscriptionPath,
+        activeSubscriptions: Array.from(this.subscriptions.keys()),
+      });
+
+      // STOMP publish 호출
+      try {
+        this.client.publish({
+          destination: '/pub/chat/message',
+          body,
+        });
+        console.log(`[STOMP] ✅ Message published to /pub/chat/message for room ${message.roomId}`);
+        console.log(`[STOMP] Waiting for server response on ${subscriptionPath}...`);
+      } catch (publishError) {
+        console.error('[STOMP] ❌ Error during publish:', publishError);
+        throw publishError;
+      }
+      
+      // 실제로 전송되었는지 확인 (다음 틱에서)
+      setTimeout(() => {
+        if (!this.client?.connected) {
+          console.error('[STOMP] Connection lost after publish attempt');
+        } else {
+          console.log('[STOMP] Connection still active after publish');
+        }
+      }, 100);
     } catch (error) {
       console.error('[STOMP] Failed to send message:', error);
       this.handleError(error as Error);
+      throw error; // 에러를 상위로 전달
     }
   }
 

@@ -142,7 +142,14 @@ export function useChat(userId: string | null) {
 
       console.log('[useChat] Subscribing to room:', roomId);
       const unsubscribe = stompClient.subscribe(roomId, (message: ChatMessage) => {
-        console.log('[useChat] Received message via subscription:', message);
+        console.log('[useChat] ✅ Received message via subscription:', message);
+        console.log('[useChat] Message details:', {
+          messageId: message.messageId,
+          clientMessageId: message.clientMessageId,
+          roomId: message.roomId,
+          senderId: message.senderId,
+          content: message.content || message.message,
+        });
 
         // 서버에서 받은 메시지를 UI 상태에 반영
         setMessagesByRoom((prev) => {
@@ -228,6 +235,19 @@ export function useChat(userId: string | null) {
         }
       }
 
+      // WebSocket 연결 상태 확인
+      const isConnected = stompClient.isConnected();
+      console.log('[useChat] WebSocket connection status:', {
+        isConnected,
+        wsStatus,
+        currentRoomId,
+      });
+
+      if (!isConnected) {
+        console.error('[useChat] Cannot send message: WebSocket is not connected');
+        throw new Error('WebSocket is not connected');
+      }
+
       // WebSocket으로 메시지 전송
       // 서버에서 메시지를 처리하고 브로드캐스트하면,
       // subscribeToRoom의 구독 핸들러를 통해 수신되어 UI에 표시됩니다.
@@ -246,7 +266,7 @@ export function useChat(userId: string | null) {
         throw error; // 에러를 상위로 전달하여 UI에서 처리할 수 있도록 함
       }
     },
-    [userId, subscribeToRoom]
+    [userId, subscribeToRoom, wsStatus, currentRoomId]
   );
 
   /**
