@@ -147,8 +147,8 @@ export default function ChatRoomPage() {
     : product?.price || "";
 
   return (
-    <div className="flex-1 flex flex-col py-6 min-h-0 overflow-hidden">
-      <div className="max-w-[1400px] w-full flex-1 flex flex-col min-h-0">
+    <div className="flex flex-col py-6 " style={{ height: 'calc(80vh)' }}>
+      <div className="max-w-[1400px] w-full mx-auto px-5 flex-1 flex flex-col min-h-0">
         <div className="flex gap-6 flex-1 min-h-0 overflow-hidden">
           {/* 왼쪽 영역: 상품 정보 */}
           <div className="flex-shrink-0 w-[380px] overflow-y-auto">
