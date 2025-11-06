@@ -27,7 +27,7 @@ export default function InteractiveDotBackground({
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   const dotsRef = useRef<Dot[]>([]);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | undefined>(undefined);
 
   // 도트 그리드 생성
   useEffect(() => {

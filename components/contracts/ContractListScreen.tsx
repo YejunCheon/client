@@ -119,8 +119,10 @@ const ContractListScreen = ({ viewerId }: ContractListScreenProps) => {
     viewerKey: viewerId,
   });
 
+  const contracts = data?.contracts ?? [];
+
   const viewerContracts = useMemo<ContractListItem[]>(() => {
-    const allContracts = data?.contracts ?? [];
+    const allContracts = contracts;
     if (!viewerId) {
       return [];
     }
@@ -137,7 +139,7 @@ const ContractListScreen = ({ viewerId }: ContractListScreenProps) => {
         return String(value) === viewerKey;
       });
     });
-  }, [data?.contracts, viewerId]);
+  }, [contracts, viewerId]);
 
   const totalCount = viewerContracts.length;
 
@@ -237,11 +239,12 @@ const ContractListScreen = ({ viewerId }: ContractListScreenProps) => {
     return `${datePart} ${timePart}`;
   };
 
-  const formatContractId = (id: string) => {
-    if (id.length <= 8) {
-      return id;
+  const formatContractId = (id: string | number) => {
+    const idStr = String(id);
+    if (idStr.length <= 8) {
+      return idStr;
     }
-    return `${id.slice(0, 4)}...${id.slice(-4)}`;
+    return `${idStr.slice(0, 4)}...${idStr.slice(-4)}`;
   };
 
   const handleResetFilters = () => {
