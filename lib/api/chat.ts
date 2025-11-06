@@ -52,18 +52,28 @@ function normalizeContractRequestPayload(payload: ContractRequestRequest) {
   };
 }
 
-function normalizeChatRoom(room: Partial<ChatRoom>): ChatRoom {
+function normalizeChatRoom(room: Partial<ChatRoom> & {
+  seller?: number | string;
+  buyer?: number | string;
+  proudctId?: number | string; // 백엔드 오타 대응
+}): ChatRoom {
   const toNumber = (value: unknown): number => {
     if (typeof value === 'number') return value;
+    if (value == null) return 0;
     const parsed = Number(value);
     return Number.isNaN(parsed) ? 0 : parsed;
   };
 
+  // 백엔드 응답 필드명 대응: seller/buyer -> sellerId/buyerId
+  const sellerId = room.sellerId ?? room.seller;
+  const buyerId = room.buyerId ?? room.buyer;
+  const productId = room.productId ?? room.proudctId; // 백엔드 오타 대응
+
   return {
     roomId: room.roomId ?? '',
-    sellerId: toNumber(room.sellerId),
-    buyerId: toNumber(room.buyerId),
-    productId: toNumber(room.productId),
+    sellerId: toNumber(sellerId),
+    buyerId: toNumber(buyerId),
+    productId: toNumber(productId),
     createdAt: room.createdAt,
     updatedAt: room.updatedAt ?? room.lastMessageTime,
     lastMessage: room.lastMessage,
@@ -73,16 +83,25 @@ function normalizeChatRoom(room: Partial<ChatRoom>): ChatRoom {
 
 function normalizeMessagesResponse(
   payload: ChatMessagesRequest,
-  response: Partial<ChatMessagesResponse>
+  response: Partial<ChatMessagesResponse> & {
+    roomID?: string | null; // 백엔드 응답 필드명 (대소문자)
+    isexist?: boolean; // 백엔드 응답 필드
+  }
 ): ChatMessagesResponse {
   const messages: ChatMessage[] = Array.isArray(response.messages)
     ? response.messages
     : [];
 
+  // 백엔드 응답 필드명 대응: roomID -> roomId
+  const roomId = response.roomId ?? response.roomID ?? payload.roomId ?? '';
+
+  // isexist가 false이거나 메시지가 없는 경우 처리
+  const success = response.success ?? (response.isexist !== false && messages.length >= 0);
+
   return {
-    roomId: response.roomId ?? payload.roomId ?? '',
+    roomId: roomId || '',
     messages,
-    success: response.success ?? true,
+    success,
   };
 }
 
