@@ -79,7 +79,7 @@ export default function Navbar() {
                 variant="outline"
                 size="sm"
                 onClick={handleLogout}
-                className="text-[14px]"
+                className="text-[14px] cursor-pointer"
               >
                 로그아웃
               </Button>
@@ -90,7 +90,7 @@ export default function Navbar() {
                 variant="default"
                 size="sm"
                 onClick={() => router.push("/auth")}
-                className="text-[14px] bg-[#030213] text-white hover:bg-[#030213]/90"
+                className="text-[14px] bg-[#030213] text-white hover:bg-[#030213]/90 cursor-pointer"
               >
                 로그인/회원가입
               </Button>
@@ -107,7 +107,7 @@ export default function Navbar() {
                 variant="outline"
                 size="sm"
                 onClick={handleLogout}
-                className="text-[12px]"
+                className="text-[12px] cursor-pointer"
               >
                 로그아웃
               </Button>
@@ -117,7 +117,7 @@ export default function Navbar() {
               variant="default"
               size="sm"
               onClick={() => router.push("/auth")}
-              className="text-[12px] bg-[#030213] text-white hover:bg-[#030213]/90"
+              className="text-[12px] bg-[#030213] text-white hover:bg-[#030213]/90 cursor-pointer"
             >
               로그인/회원가입
             </Button>
