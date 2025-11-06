@@ -1,10 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useAuthStore } from "@/lib/store/auth";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import NotificationCenter from "@/components/notification/NotificationCenter";
+import { useNotification } from "@/hooks/use-notification";
+import type { Notification } from "@/types/notification";
 
 const imgLogo = "/assets/2bef342664b11de04b2130dfa1c435984d5241b1.svg";
 const imgVectorStroke = "/assets/c76b9efec1aaf6868b3f07b078748d9f98bef3d9.svg";
@@ -32,9 +35,31 @@ export default function Navbar() {
   const shouldShowUser = !!user && status !== "unauthenticated";
   const router = useRouter();
 
+  // 알림센터 상태
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const userId = user?.id || null;
+
+  // 알림 훅
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+  } = useNotification(userId);
+
   const handleLogout = async () => {
     await logout();
     router.push("/");
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    // 알림 타입에 따라 적절한 페이지로 이동
+    if (notification.metadata?.roomId) {
+      router.push(`/chat/${notification.metadata.roomId}`);
+    } else if (notification.metadata?.contractId) {
+      router.push(`/contracts/${notification.metadata.contractId}`);
+    }
+    setIsNotificationOpen(false);
   };
 
   return (
@@ -74,6 +99,45 @@ export default function Navbar() {
           {/* 인증 상태에 따른 UI */}
           {shouldShowUser ? (
             <div className="flex items-center gap-4 ml-4 pl-4 border-l border-[#e0e0e0]">
+              {/* 알림 버튼 */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                  className="relative p-2 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+                  aria-label="알림"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="w-6 h-6 text-[#222]"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
+                    />
+                  </svg>
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-500 rounded-full">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* 알림센터 모달 */}
+                <NotificationCenter
+                  isOpen={isNotificationOpen}
+                  onClose={() => setIsNotificationOpen(false)}
+                  notifications={notifications}
+                  onMarkAsRead={markAsRead}
+                  onMarkAllAsRead={markAllAsRead}
+                  onNotificationClick={handleNotificationClick}
+                />
+              </div>
+
               <span className="text-[16px] font-medium text-[#222]">{user?.name}님</span>
               <Button
                 variant="outline"
@@ -102,6 +166,35 @@ export default function Navbar() {
         <div className="flex md:hidden items-center gap-3 order-4">
           {shouldShowUser ? (
             <>
+              {/* 모바일 알림 버튼 */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                  className="relative p-2 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+                  aria-label="알림"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="w-5 h-5 text-[#222]"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
+                    />
+                  </svg>
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0 right-0 flex items-center justify-center w-4 h-4 text-[9px] font-bold text-white bg-red-500 rounded-full">
+                      {unreadCount > 99 ? "99" : unreadCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+
               <span className="text-[14px] font-medium text-[#222]">{user?.name}님</span>
               <Button
                 variant="outline"
