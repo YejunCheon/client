@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useProduct } from '@/hooks/use-products';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, ArrowLeft, Heart, Send } from 'lucide-react';
+import { ArrowLeft, Heart, Send } from 'lucide-react';
 import Image from 'next/image';
 import { useChat } from '@/hooks/use-chat';
 import { useAuthStore } from '@/lib/store/auth';
@@ -26,12 +26,46 @@ export default function ProductDetailScreen() {
 
     setIsCreatingChat(true);
     try {
-      const result = await createRoom({
-        seller: productData.product.memberId.toString(),
-        buyer: user.id.toString(),
-        productId: productData.product.id.toString(),
+      const sellerId = productData.product.memberId.toString();
+      const buyerId = user.id.toString();
+      const currentProductId = productData.product.id.toString();
+
+      // 먼저 채팅방 목록에서 동일한 seller-buyer-productId 조합이 있는지 확인
+      const response = await fetch('/api/chat/getchatrooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: buyerId }),
       });
-      
+
+      if (response.ok) {
+        const data = await response.json();
+        const rooms = data.rooms || data.chatRooms || [];
+
+        // seller-buyer-productId 3가지가 모두 일치하는 채팅방 찾기
+        const existingRoom = rooms.find((room: any) => {
+          const roomSellerId = (room.sellerId || room.seller)?.toString();
+          const roomBuyerId = (room.buyerId || room.buyer)?.toString();
+          const roomProductId = (room.productId || room.proudctId)?.toString();
+
+          return roomSellerId === sellerId &&
+                 roomBuyerId === buyerId &&
+                 roomProductId === currentProductId;
+        });
+
+        if (existingRoom) {
+          // 기존 채팅방이 있으면 바로 이동
+          router.push(`/chat/${existingRoom.roomId}`);
+          return;
+        }
+      }
+
+      // 기존 채팅방이 없으면 새로 생성
+      const result = await createRoom({
+        seller: sellerId,
+        buyer: buyerId,
+        productId: currentProductId,
+      });
+
       if (result?.roomId) {
         router.push(`/chat/${result.roomId}`);
       }
