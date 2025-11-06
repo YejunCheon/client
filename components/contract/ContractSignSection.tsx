@@ -4,7 +4,7 @@ import React, { useRef, useState, ChangeEvent } from 'react';
 import { cn } from '@/lib/utils';
 import { SignaturePadModal } from '@/components/signature/SignaturePadModal';
 import { SignaturePreview } from '@/components/signature/SignaturePreview';
-import { PenTool, ShieldCheck, ShieldAlert, FileImage } from 'lucide-react';
+import { PenTool, FileImage } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ContractSignSectionProps {
@@ -13,10 +13,6 @@ interface ContractSignSectionProps {
   onSignatureRemove?: () => void;
   finalSignDate?: string;
   className?: string;
-  // 본인인증 관련 props
-  hasVerifyToken?: boolean;
-  verifySecondsRemaining?: number;
-  onVerify?: () => void;
 }
 
 export function ContractSignSection({
@@ -25,9 +21,6 @@ export function ContractSignSection({
   onSignatureRemove,
   finalSignDate,
   className,
-  hasVerifyToken = false,
-  verifySecondsRemaining = 0,
-  onVerify,
 }: ContractSignSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
@@ -72,52 +65,6 @@ export function ContractSignSection({
       <h2 className="text-[28px] font-bold leading-[36px] text-[#222222]">
         서명하기
       </h2>
-
-      {/* 본인인증 섹션 */}
-      <div className="flex flex-col gap-2">
-        <label className="text-[14px] font-medium text-neutral-950">
-          본인인증
-        </label>
-        <div className="flex flex-col gap-2 rounded-md border border-[#d9d9e3] bg-[#f7f7fb] p-3">
-          <div className="flex items-center gap-2">
-            {hasVerifyToken ? (
-              <>
-                <ShieldCheck className="size-5 text-emerald-600" />
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-neutral-950">
-                    본인인증 완료
-                  </span>
-                  <span className="text-xs text-[#4a9079]">
-                    남은 시간 {verifySecondsRemaining}초 · 토큰은 1회성입니다.
-                  </span>
-                </div>
-              </>
-            ) : (
-              <>
-                <ShieldAlert className="size-5 text-[#f59e0b]" />
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-neutral-950">
-                    본인인증이 필요합니다
-                  </span>
-                  <span className="text-xs text-[#717182]">
-                    계약서 전달 전 본인인증을 완료해주세요.
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
-          <div>
-            <Button
-              type="button"
-              onClick={onVerify}
-              variant="outline"
-              className="h-9 w-fit border-[#d9d9e3] px-4 text-sm"
-            >
-              {hasVerifyToken ? '다시 본인인증하기' : '본인인증하기'}
-            </Button>
-          </div>
-        </div>
-      </div>
 
       {/* 서명 이미지 섹션 */}
       <div className="flex flex-col gap-2">
