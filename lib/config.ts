@@ -6,21 +6,14 @@ const getApiUrl = () => {
     return '';
   }
   // SSR 환경: 원래 서버 URL 사용
-  return (
-    process.env.NEXT_PUBLIC_API_URL ||
-    'http://dealchain-env.eba-tpa3rca3.ap-northeast-2.elasticbeanstalk.com'
-  );
+  return process.env.NEXT_PUBLIC_API_URL || '';
 };
 
 export const config = {
   apiUrl: getApiUrl(),
-  wsUrl:
-    process.env.NEXT_PUBLIC_WS_URL ||
-    'http://dealchain-env.eba-tpa3rca3.ap-northeast-2.elasticbeanstalk.com/ws',
+  wsUrl: process.env.NEXT_PUBLIC_WS_URL || '',
   environment: process.env.NEXT_PUBLIC_ENV || 'development',
-  verifyStartUrl:
-    process.env.NEXT_PUBLIC_VERIFY_START_URL ||
-    'http://mockapi-env.eba-mpd9wfbe.ap-northeast-2.elasticbeanstalk.com/mock-verify/start',
+  verifyStartUrl: process.env.NEXT_PUBLIC_VERIFY_START_URL || '',
   verifyCallbackPath: '/verify/callback',
   verifyTokenTtlSeconds: Math.max(
     1,

@@ -2,9 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   async rewrites() {
-    const apiServer =
-      process.env.NEXT_PUBLIC_API_URL ||
-      'http://dealchain-env.eba-tpa3rca3.ap-northeast-2.elasticbeanstalk.com';
+    const apiServer = process.env.NEXT_PUBLIC_API_URL || '';
 
     return [
       {
@@ -18,16 +16,28 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'http',
-        hostname: 'dealchain-env.eba-tpa3rca3.ap-northeast-2.elasticbeanstalk.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'dealchain-env.eba-tpa3rca3.ap-northeast-2.elasticbeanstalk.com',
-      },
-    ],
+    remotePatterns: (() => {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      if (!apiUrl) return [];
+
+      try {
+        const url = new URL(apiUrl);
+        const hostname = url.hostname;
+
+        return [
+          {
+            protocol: 'http',
+            hostname: hostname,
+          },
+          {
+            protocol: 'https',
+            hostname: hostname,
+          },
+        ];
+      } catch {
+        return [];
+      }
+    })(),
     unoptimized: true, // 외부 이미지 최적화 비활성화
   },
 };

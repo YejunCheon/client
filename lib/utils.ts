@@ -27,8 +27,8 @@ export function normalizeImageUrl(imageUrl: string | null | undefined): string {
 
   // 클라이언트 사이드에서는 항상 절대 URL 사용
   if (typeof window !== 'undefined') {
-    // API 서버 URL 가져오기 (환경 변수 또는 기본값)
-    const apiServer = process.env.NEXT_PUBLIC_API_URL || 'http://dealchain-env.eba-tpa3rca3.ap-northeast-2.elasticbeanstalk.com';
+    // API 서버 URL 가져오기 (config에서 환경 변수를 가져옴)
+    const apiServer = appConfig.apiUrl || process.env.NEXT_PUBLIC_API_URL || '';
     
     // 이미 상대 경로로 시작하는 경우 (/로 시작)
     if (imageUrl.startsWith('/')) {
