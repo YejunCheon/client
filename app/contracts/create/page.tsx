@@ -22,7 +22,6 @@ export default function ContractCreatePage() {
     loading,
     error,
     updateField,
-    setSummary,
     handleSignatureUpload,
     handleSignatureRemove,
     saveDraft,
@@ -114,9 +113,9 @@ export default function ContractCreatePage() {
           {/* Right: Summary and Sign */}
           <div className="flex-shrink-0 w-[706px] flex flex-col gap-[58px]">
             {/* Summary Section */}
-            <ContractSummarySection 
-              summary={summary} 
-              onSummaryChange={setSummary}
+            <ContractSummarySection
+              summary={summary}
+              isLoading={loading}
             />
 
             {/* Sign Section */}
