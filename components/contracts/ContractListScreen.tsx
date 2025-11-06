@@ -116,6 +116,7 @@ const ContractListScreen = ({ viewerId }: ContractListScreenProps) => {
     refetch,
   } = useContracts({
     enabled: Boolean(viewerId),
+    viewerKey: viewerId,
   });
 
   const viewerContracts = useMemo<ContractListItem[]>(() => {
@@ -279,6 +280,12 @@ const ContractListScreen = ({ viewerId }: ContractListScreenProps) => {
               : '아직 등록된 계약서가 없습니다. 곧 생성될 계약서를 기다려 주세요.'}
           </p>
         </header>
+
+        {!data?.success && data?.message && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {data.message}
+          </div>
+        )}
 
         <section className="rounded-3xl border border-slate-200 bg-white px-6 py-6 shadow-sm">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
