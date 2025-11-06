@@ -4,7 +4,8 @@ import React, { useRef, useState, ChangeEvent } from 'react';
 import { cn } from '@/lib/utils';
 import { SignaturePadModal } from '@/components/signature/SignaturePadModal';
 import { SignaturePreview } from '@/components/signature/SignaturePreview';
-import { PenTool } from 'lucide-react';
+import { PenTool, ShieldCheck, ShieldAlert, FileImage } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ContractSignSectionProps {
   signatureImage?: string | File | null;
@@ -12,6 +13,10 @@ interface ContractSignSectionProps {
   onSignatureRemove?: () => void;
   finalSignDate?: string;
   className?: string;
+  // 본인인증 관련 props
+  hasVerifyToken?: boolean;
+  verifySecondsRemaining?: number;
+  onVerify?: () => void;
 }
 
 export function ContractSignSection({
@@ -20,6 +25,9 @@ export function ContractSignSection({
   onSignatureRemove,
   finalSignDate,
   className,
+  hasVerifyToken = false,
+  verifySecondsRemaining = 0,
+  onVerify,
 }: ContractSignSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
@@ -57,7 +65,7 @@ export function ContractSignSection({
   return (
     <div
       className={cn(
-        'bg-[#f9f9f9] rounded-[28px] px-4 py-10 flex flex-col gap-[10px] h-[502px]',
+        'bg-[#f9f9f9] rounded-[28px] px-9 py-[34px] flex flex-col gap-6',
         className
       )}
     >
@@ -65,95 +73,103 @@ export function ContractSignSection({
         서명하기
       </h2>
 
-      <div className="flex-1 flex gap-[11px] items-start">
-        {/* Signature Image Preview */}
-        <SignaturePreview
-          signatureImage={signatureImage}
-          onRemove={onSignatureRemove ? handleRemove : undefined}
-          width={299}
-          height={349}
-          emptyMessage="서명 이미지 미리보기"
-          showRemoveButton={!!onSignatureRemove}
-        />
-
-        {/* Signature Upload Form */}
-        <div className="flex-1 flex flex-col gap-[42px]">
-          {/* Final Sign Date */}
-          {finalSignDate && (
-            <div className="flex flex-col gap-3">
-              <p className="text-[18px] font-bold leading-[26px] text-[#222222]">
-                최종서명일
-              </p>
-              <p className="text-[15px] font-normal leading-[22px] text-[#222222]">
-                {finalSignDate}
-              </p>
-            </div>
-          )}
-
-          {/* Signature Upload */}
-          <div className="flex flex-col gap-3">
-            <p className="text-[18px] font-bold leading-[26px] text-[#222222]">
-              자필 서명 등록
-            </p>
-            <div className="flex flex-col gap-2">
-              <div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  id="signature-upload"
-                />
-                <label
-                  htmlFor="signature-upload"
-                  className={cn(
-                    'bg-[#f2f2f2] border border-[#dedede] rounded-[16px]',
-                    'px-[26px] py-[27px]',
-                    'flex flex-col gap-[10px] items-center justify-center',
-                    'cursor-pointer hover:bg-[#e8e8e8] transition-colors',
-                    'min-h-[103px]'
-                  )}
-                >
-                  <div className="flex flex-col gap-[5px] items-center justify-center">
-                    {/* Image Icon */}
-                    <svg
-                      width="27"
-                      height="27"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="text-[#767676]"
-                    >
-                      <path
-                        d="M9 2C7.89 2 7 2.89 7 4V20C7 21.11 7.89 22 9 22H15C16.11 22 17 21.11 17 20V4C17 2.89 16.11 2 15 2H9ZM9 4H15V20H9V4ZM11 6V8H13V6H11ZM11 10V12H13V10H11ZM11 14V16H13V14H11Z"
-                        fill="currentColor"
-                      />
-                    </svg>
-                    <p className="text-[12px] leading-[16px] text-[#767676] text-center">
-                      5mb 이내 .png .jpg
-                    </p>
-                  </div>
-                </label>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsSignatureModalOpen(true)}
-                className={cn(
-                  'bg-white border border-[#2487f8] rounded-[16px]',
-                  'px-4 py-3',
-                  'flex items-center justify-center gap-2',
-                  'cursor-pointer hover:bg-[#f0f7ff] transition-colors',
-                  'text-[#2487f8] font-semibold'
-                )}
-              >
-                <PenTool className="w-5 h-5" />
-                <span>직접 서명하기</span>
-              </button>
-            </div>
+      {/* 본인인증 섹션 */}
+      <div className="flex flex-col gap-2">
+        <label className="text-[14px] font-medium text-neutral-950">
+          본인인증
+        </label>
+        <div className="flex flex-col gap-2 rounded-md border border-[#d9d9e3] bg-[#f7f7fb] p-3">
+          <div className="flex items-center gap-2">
+            {hasVerifyToken ? (
+              <>
+                <ShieldCheck className="size-5 text-emerald-600" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-neutral-950">
+                    본인인증 완료
+                  </span>
+                  <span className="text-xs text-[#4a9079]">
+                    남은 시간 {verifySecondsRemaining}초 · 토큰은 1회성입니다.
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <ShieldAlert className="size-5 text-[#f59e0b]" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-neutral-950">
+                    본인인증이 필요합니다
+                  </span>
+                  <span className="text-xs text-[#717182]">
+                    계약서 전달 전 본인인증을 완료해주세요.
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+          <div>
+            <Button
+              type="button"
+              onClick={onVerify}
+              variant="outline"
+              className="h-9 w-fit border-[#d9d9e3] px-4 text-sm"
+            >
+              {hasVerifyToken ? '다시 본인인증하기' : '본인인증하기'}
+            </Button>
           </div>
         </div>
       </div>
+
+      {/* 서명 이미지 섹션 */}
+      <div className="flex flex-col gap-2">
+        <label className="text-[14px] font-medium text-neutral-950">
+          서명 이미지
+        </label>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <FileImage className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#717182]" />
+            <input
+              ref={fileInputRef}
+              name="signatureImage"
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="h-9 w-full cursor-pointer rounded-md border-0 bg-[#f3f3f5] pl-10 text-sm file:mr-4 file:border-0 file:bg-transparent file:text-sm file:font-medium"
+            />
+          </div>
+          <Button
+            type="button"
+            onClick={() => setIsSignatureModalOpen(true)}
+            variant="outline"
+            className="flex h-9 items-center gap-2 whitespace-nowrap px-4"
+          >
+            <PenTool className="size-4" />
+            직접 서명하기
+          </Button>
+        </div>
+        {signatureImage && (
+          <div className="mt-2">
+            <SignaturePreview
+              signatureImage={signatureImage}
+              onRemove={onSignatureRemove ? handleRemove : undefined}
+              width="100%"
+              height={200}
+              className="border border-[#dedede]"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* 최종 서명일 */}
+      {finalSignDate && (
+        <div className="flex flex-col gap-2 pt-2 border-t border-[#e0e0e0]">
+          <label className="text-[14px] font-medium text-neutral-950">
+            최종서명일
+          </label>
+          <p className="text-[14px] text-[#717182]">
+            {finalSignDate}
+          </p>
+        </div>
+      )}
 
       {/* Signature Pad Modal */}
       <SignaturePadModal

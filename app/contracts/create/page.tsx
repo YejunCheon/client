@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { ContractPreviewSection } from '@/components/contract/ContractPreviewSection';
 import { ContractSummarySection } from '@/components/contract/ContractSummarySection';
 import { ContractSignSection } from '@/components/contract/ContractSignSection';
@@ -10,6 +10,32 @@ import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useAuthStore } from '@/lib/store/auth';
 import { Send } from 'lucide-react';
 import { useIsClient } from '@/hooks/use-is-client';
+import { config } from '@/lib/config';
+
+const VERIFY_TOKEN_STORAGE_KEY = 'dealchain:verify_token';
+const VERIFY_STATE_STORAGE_KEY = 'dealchain:verify_state';
+
+interface StoredVerifyToken {
+  token: string;
+  issuedAt: number;
+}
+
+interface StoredVerifyState {
+  value: string;
+  createdAt: number;
+}
+
+function createNonce(bytes = 24): string {
+  const buffer = new Uint8Array(bytes);
+  if (typeof globalThis !== 'undefined' && globalThis.crypto?.getRandomValues) {
+    globalThis.crypto.getRandomValues(buffer);
+  } else {
+    for (let i = 0; i < buffer.length; i += 1) {
+      buffer[i] = Math.floor(Math.random() * 256);
+    }
+  }
+  return Array.from(buffer, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
 
 export default function ContractCreatePage() {
   const isClient = useIsClient();
@@ -30,6 +56,102 @@ export default function ContractCreatePage() {
     validateForm,
   } = useContractCreate();
   const { user } = useAuthStore();
+
+  const verifyTtlSeconds = config.verifyTokenTtlSeconds;
+  const verifyTtlMs = config.verifyTokenTtlSeconds * 1000;
+
+  const [verifyToken, setVerifyToken] = useState<string | null>(null);
+  const [verifyIssuedAt, setVerifyIssuedAt] = useState<number | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+
+  const hasVerifyToken = Boolean(verifyToken);
+  const verifySecondsRemaining = hasVerifyToken
+    ? Math.max(0, Math.ceil(timeRemaining / 1000))
+    : 0;
+
+  const clearVerifyToken = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(VERIFY_TOKEN_STORAGE_KEY);
+    }
+    setVerifyToken(null);
+    setVerifyIssuedAt(null);
+    setTimeRemaining(0);
+  }, []);
+
+  // 본인인증 토큰 로드
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const raw = window.sessionStorage.getItem(VERIFY_TOKEN_STORAGE_KEY);
+    if (!raw) return;
+
+    try {
+      const stored = JSON.parse(raw) as StoredVerifyToken;
+      if (!stored.token || typeof stored.issuedAt !== 'number') {
+        window.sessionStorage.removeItem(VERIFY_TOKEN_STORAGE_KEY);
+        return;
+      }
+
+      const elapsed = Date.now() - stored.issuedAt;
+      if (elapsed >= verifyTtlMs) {
+        window.sessionStorage.removeItem(VERIFY_TOKEN_STORAGE_KEY);
+        return;
+      }
+
+      setVerifyToken(stored.token);
+      setVerifyIssuedAt(stored.issuedAt);
+      setTimeRemaining(verifyTtlMs - elapsed);
+    } catch {
+      window.sessionStorage.removeItem(VERIFY_TOKEN_STORAGE_KEY);
+    }
+  }, [verifyTtlMs]);
+
+  // 본인인증 타이머
+  useEffect(() => {
+    if (!verifyToken || !verifyIssuedAt) {
+      return;
+    }
+
+    const tick = () => {
+      const remaining = verifyTtlMs - (Date.now() - verifyIssuedAt);
+      if (remaining <= 0) {
+        clearVerifyToken();
+        alert('본인인증 토큰이 만료되었습니다. 다시 인증해주세요.');
+        return;
+      }
+      setTimeRemaining(remaining);
+    };
+
+    tick();
+    const interval = window.setInterval(tick, 1000);
+    return () => window.clearInterval(interval);
+  }, [verifyToken, verifyIssuedAt, verifyTtlMs, clearVerifyToken]);
+
+  // 본인인증 시작 핸들러
+  const handleStartVerification = useCallback(() => {
+    if (typeof window === 'undefined') return;
+
+    clearVerifyToken();
+
+    const state = createNonce(24);
+    const statePayload: StoredVerifyState = {
+      value: state,
+      createdAt: Date.now(),
+    };
+
+    window.sessionStorage.setItem(
+      VERIFY_STATE_STORAGE_KEY,
+      JSON.stringify(statePayload)
+    );
+
+    const callbackUrl = new URL(config.verifyCallbackPath, window.location.origin);
+    const verifyUrl = new URL(config.verifyStartUrl, window.location.origin);
+
+    verifyUrl.searchParams.set('redirect_uri', callbackUrl.toString());
+    verifyUrl.searchParams.set('state', state);
+
+    window.location.href = verifyUrl.toString();
+  }, [clearVerifyToken]);
 
   // 페이지 로드 시 임시 저장된 데이터 불러오기
   useEffect(() => {
@@ -61,18 +183,25 @@ export default function ContractCreatePage() {
       return;
     }
 
+    if (!hasVerifyToken) {
+      alert('본인인증을 완료한 후 계약서를 전달해주세요.');
+      return;
+    }
+
     try {
       // TODO: URL 파라미터나 쿼리에서 가져오기
       const urlParams = new URLSearchParams(window.location.search);
       const buyerId = urlParams.get('buyerId') || '';
       const roomId = urlParams.get('roomId') || '';
-      
+
       await submitContract({
         sellerId: user?.id ?? '',
         buyerId,
         roomId: roomId || undefined,
         deviceInfo: navigator.userAgent,
       });
+
+      clearVerifyToken(); // 계약서 전달 후 토큰 삭제
       alert('매수자에게 계약서가 전달되었습니다.');
       // 성공 시 리다이렉트 또는 모달 표시
     } catch (err) {
@@ -98,7 +227,7 @@ export default function ContractCreatePage() {
   const finalSignDate = getFinalSignDate();
 
   return (
-    <div className="w-full min-h-screen bg-white py-[136px] px-10">
+    <div className="w-full min-h-screen bg-white pt-10 pb-10 px-10">
       <div className="mx-auto max-w-[1512px]">
         <div className="flex items-start justify-between gap-10">
           {/* Left: Contract Preview */}
@@ -124,6 +253,9 @@ export default function ContractCreatePage() {
               onSignatureUpload={handleSignatureUpload}
               onSignatureRemove={handleSignatureRemove}
               finalSignDate={finalSignDate}
+              hasVerifyToken={hasVerifyToken}
+              verifySecondsRemaining={verifySecondsRemaining}
+              onVerify={handleStartVerification}
             />
 
             {/* Action Buttons */}
@@ -138,8 +270,8 @@ export default function ContractCreatePage() {
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={loading || !signatureImage}
-                className="bg-[#2487f8] text-white hover:bg-[#1e6fc9] rounded-[15px] px-5 py-[11px] text-[18px] font-bold flex items-center gap-2"
+                disabled={loading || !signatureImage || !hasVerifyToken}
+                className="bg-[#2487f8] text-white hover:bg-[#1e6fc9] rounded-[15px] px-5 py-[11px] text-[18px] font-bold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 매수자에게 계약서 전달
                 <Send className="w-6 h-6" />
