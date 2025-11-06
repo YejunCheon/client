@@ -32,21 +32,19 @@ interface ContractPreviewSectionProps {
     // escrow.details
     escrow?: string;
   };
-  onChange?: (field: string, value: string) => void;
+  onChange?: (field: keyof ContractPreviewSectionProps['contractData'], value: string) => void;
   isAIGenerated?: boolean;
   rationale?: {
-    reason: {
-      item_details?: string;
-      payment?: string;
-      delivery?: string;
-      cancellation_policy?: string;
-      contract_date?: string;
-      dispute_resolution?: string;
-      escrow?: string;
-      other_terms?: string;
-      parties?: string;
-      refund_policy?: string;
-    };
+    item_details?: string;
+    payment?: string;
+    delivery?: string;
+    cancellation_policy?: string;
+    contract_date?: string;
+    dispute_resolution?: string;
+    escrow?: string;
+    other_terms?: string;
+    parties?: string;
+    refund_policy?: string;
   };
 }
 
@@ -56,7 +54,7 @@ export function ContractPreviewSection({
   isAIGenerated = false,
   rationale,
 }: ContractPreviewSectionProps) {
-  const handleFieldChange = (field: string, value: string) => {
+  const handleFieldChange = (field: keyof ContractPreviewSectionProps['contractData'], value: string) => {
     onChange?.(field, value);
   };
 
@@ -114,7 +112,7 @@ export function ContractPreviewSection({
             value={contractData.productName || ''}
             onChange={(value) => handleFieldChange('productName', value)}
             placeholder="예: 리코 GR3, MacBook Pro 등"
-            tooltipContent={rationale?.reason?.item_details || '정확한 모델명을 기재하여 거래 품목을 명확히 식별할 수 있도록 합니다.'}
+            tooltipContent={rationale?.item_details || '정확한 모델명을 기재하여 거래 품목을 명확히 식별할 수 있도록 합니다.'}
           />
 
           {/* Item Condition */}
@@ -123,7 +121,7 @@ export function ContractPreviewSection({
             value={contractData.itemCondition || ''}
             onChange={(value) => handleFieldChange('itemCondition', value)}
             placeholder="예: 우측 상단의 작은 기스, 1200 셔터 수, 23년 구입"
-            tooltipContent={rationale?.reason?.item_details || '품목의 상태를 상세히 기록하여 거래 후 분쟁을 예방합니다.'}
+            tooltipContent={rationale?.item_details || '품목의 상태를 상세히 기록하여 거래 후 분쟁을 예방합니다.'}
           />
 
           {/* Price */}
@@ -132,7 +130,7 @@ export function ContractPreviewSection({
             value={contractData.price || ''}
             onChange={(value) => handleFieldChange('price', value)}
             placeholder="예: 1,000,000원"
-            tooltipContent={rationale?.reason?.payment || '매매금액을 명확히 기재합니다.'}
+            tooltipContent={rationale?.payment || '매매금액을 명확히 기재합니다.'}
           />
 
           {/* Price Method */}
@@ -141,7 +139,7 @@ export function ContractPreviewSection({
             value={contractData.priceMethod || ''}
             onChange={(value) => handleFieldChange('priceMethod', value)}
             placeholder="예: 계약금 300,000원, 잔금 700,000원"
-            tooltipContent={rationale?.reason?.payment || '계약금과 잔금을 명확히 구분하여 지불 조건을 명시합니다.'}
+            tooltipContent={rationale?.payment || '계약금과 잔금을 명확히 구분하여 지불 조건을 명시합니다.'}
           />
 
           {/* Payment Method */}
@@ -150,7 +148,7 @@ export function ContractPreviewSection({
             value={contractData.paymentMethod || ''}
             onChange={(value) => handleFieldChange('paymentMethod', value)}
             placeholder="예: 매도인의 계좌(국민은행 0000-1234-5678)로 계좌이체"
-            tooltipContent={rationale?.reason?.payment || '지불 방법을 명확히 지정합니다.'}
+            tooltipContent={rationale?.payment || '지불 방법을 명확히 지정합니다.'}
           />
 
           {/* Payment Schedule */}
@@ -159,7 +157,7 @@ export function ContractPreviewSection({
             value={contractData.paymentSchedule || ''}
             onChange={(value) => handleFieldChange('paymentSchedule', value)}
             placeholder="예: 계약금은 계약 체결 시, 잔금은 배송 완료 후 3일 이내"
-            tooltipContent={rationale?.reason?.payment || '지불 시기를 명확히 하여 분쟁을 예방합니다.'}
+            tooltipContent={rationale?.payment || '지불 시기를 명확히 하여 분쟁을 예방합니다.'}
           />
 
           {/* Delivery Method */}
@@ -168,7 +166,7 @@ export function ContractPreviewSection({
             value={contractData.deliveryMethod || ''}
             onChange={(value) => handleFieldChange('deliveryMethod', value)}
             placeholder="예: 우체국 택배, 직거래 등"
-            tooltipContent={rationale?.reason?.delivery || '거래 방법을 명확히 지정합니다.'}
+            tooltipContent={rationale?.delivery || '거래 방법을 명확히 지정합니다.'}
           />
 
           {/* Delivery Schedule */}
@@ -177,7 +175,7 @@ export function ContractPreviewSection({
             value={contractData.deliverySchedule || ''}
             onChange={(value) => handleFieldChange('deliverySchedule', value)}
             placeholder="예: 2일 안에 우체국으로 송부"
-            tooltipContent={rationale?.reason?.delivery || '거래 시기를 명확히 하여 분쟁을 예방합니다.'}
+            tooltipContent={rationale?.delivery || '거래 시기를 명확히 하여 분쟁을 예방합니다.'}
           />
 
           {/* Cancellation Policy (청약철회 및 계약해제) */}
@@ -188,7 +186,7 @@ export function ContractPreviewSection({
             multiline
             rows={2}
             placeholder="청약철회 및 계약해제 관련 조건을 입력하세요"
-            tooltipContent={rationale?.reason?.escrow || '청약철회 및 계약해제 조건을 명확히 규정합니다.'}
+            tooltipContent={rationale?.escrow || '청약철회 및 계약해제 조건을 명확히 규정합니다.'}
           />
 
           {/* Return Policy */}
@@ -199,7 +197,7 @@ export function ContractPreviewSection({
             multiline
             rows={2}
             placeholder="예: 계약내용과 일치하는 한 단순 변심에 의한 반품 및 교환 불가능"
-            tooltipContent={rationale?.reason?.refund_policy || '반품 및 교환 조건을 명확히 하여 향후 분쟁을 방지합니다.'}
+            tooltipContent={rationale?.refund_policy || '반품 및 교환 조건을 명확히 하여 향후 분쟁을 방지합니다.'}
           />
 
           {/* Dispute Resolution */}
@@ -208,7 +206,7 @@ export function ContractPreviewSection({
             value={contractData.disputeResolution || ''}
             onChange={(value) => handleFieldChange('disputeResolution', value)}
             placeholder="분쟁 발생 시 처리 방법을 입력하세요"
-            tooltipContent={rationale?.reason?.dispute_resolution || '분쟁 발생 시 해결 절차를 명시하여 신속한 해결을 도모합니다.'}
+            tooltipContent={rationale?.dispute_resolution || '분쟁 발생 시 해결 절차를 명시하여 신속한 해결을 도모합니다.'}
           />
 
           {/* Breach of Contract */}
@@ -219,7 +217,7 @@ export function ContractPreviewSection({
             multiline
             rows={3}
             placeholder="계약 미이행 시 처리 방법을 입력하세요"
-            tooltipContent={rationale?.reason?.cancellation_policy || '계약 미이행 시 책임과 보상 방법을 명확히 규정합니다.'}
+            tooltipContent={rationale?.cancellation_policy || '계약 미이행 시 책임과 보상 방법을 명확히 규정합니다.'}
           />
 
           {/* Other Terms */}
@@ -228,7 +226,7 @@ export function ContractPreviewSection({
             value={contractData.otherTerms || ''}
             onChange={(value) => handleFieldChange('otherTerms', value)}
             placeholder="추가 조건이 있다면 입력하세요"
-            tooltipContent={rationale?.reason?.other_terms || '기타 특별한 조건이나 약속사항을 명시합니다.'}
+            tooltipContent={rationale?.other_terms || '기타 특별한 조건이나 약속사항을 명시합니다.'}
           />
         </div>
       </div>
