@@ -1,6 +1,80 @@
 // ===== 계약서 데이터 모델 =====
 
+export interface ContractParty {
+  address: string;
+  name: string;
+  phone: string;
+}
+
 export interface ContractData {
+  parties: {
+    buyer: ContractParty;
+    seller: ContractParty;
+  };
+  item_details: {
+    name: string;
+    condition_and_info: string;
+  };
+  payment: {
+    price: string;
+    price_method: string;
+    payment_method: string;
+    payment_schedule: string;
+  };
+  delivery: {
+    method: string;
+    schedule: string;
+  };
+  escrow: {
+    details: string;
+  };
+  cancellation_policy: {
+    details: string;
+  };
+  refund_policy: {
+    details: string;
+  };
+  dispute_resolution: {
+    details: string;
+  };
+  other_terms: {
+    technical_specs: string;
+    general_terms: string;
+  };
+  contract_date: string;
+  title: string;
+}
+
+export interface ContractRationale {
+  reason: {
+    item_details?: string;
+    payment?: string;
+    delivery?: string;
+    cancellation_policy?: string;
+    contract_date?: string;
+    dispute_resolution?: string;
+    escrow?: string;
+    other_terms?: string;
+    parties?: string;
+    refund_policy?: string;
+  };
+}
+
+export interface ContractSummary {
+  final_summary: string;
+}
+
+export interface ContractCreateResponse {
+  contract: ContractData;
+  rationale: ContractRationale;
+  summary: ContractSummary;
+}
+
+// 하위 호환성을 위한 별칭
+export type ContractDraftData = ContractData;
+
+// 기존 ContractDataLegacy는 하위 호환성을 위해 유지
+export interface ContractDataLegacy {
   parties: {
     sellerName: string | null;
     buyerName: string | null;
@@ -32,11 +106,19 @@ export interface ContractCreateRequest {
   deviceInfo?: string;
 }
 
-export interface ContractCreateResponse {
+// 기존 ContractCreateResponseLegacy는 하위 호환성을 위해 유지
+export interface ContractCreateResponseLegacy {
   isSuccess: boolean;
-  data: ContractData | Record<string, unknown> | string;
+  data: ContractDataLegacy | Record<string, unknown> | string;
   summary?: string;
   message?: string;
+}
+
+// 새로운 API 응답 타입 (유니온 타입으로 하위 호환성 유지)
+export type ContractCreateResponse = ContractCreateResponseLegacy | {
+  contract: ContractData;
+  rationale: ContractRationale;
+  summary: ContractSummary;
 }
 
 export type CreateContractRequest = ContractCreateRequest;

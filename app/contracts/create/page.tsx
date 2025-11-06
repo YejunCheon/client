@@ -47,6 +47,7 @@ export default function ContractCreatePage() {
     isAIGenerated,
     loading,
     error,
+    rationale,
     updateField,
     handleSignatureUpload,
     handleSignatureRemove,
@@ -236,6 +237,7 @@ export default function ContractCreatePage() {
               contractData={formData}
               onChange={updateField}
               isAIGenerated={isAIGenerated}
+              rationale={rationale || undefined}
             />
           </div>
 

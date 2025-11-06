@@ -96,7 +96,64 @@ API 명세서 (현재 코드 기준)
      - buyerId (long, required)
      - deviceInfo (string, optional)
    - 동작: roomId 대화내역 + 상품정보로 AI 계약서 JSON 생성, 서명 테이블 초기화
-   - 응답: ContractResponseDto { isSuccess, data: aiContractJson }
+   - 응답: {
+       contract: {
+         parties: {
+           buyer: { address: string, name: string, phone: string },
+           seller: { address: string, name: string, phone: string }
+         },
+         item_details: {
+           name: string,
+           condition_and_info: string
+         },
+         payment: {
+           price: string,
+           price_method: string,
+           payment_method: string,
+           payment_schedule: string
+         },
+         delivery: {
+           method: string,
+           schedule: string
+         },
+         escrow: {
+           details: string
+         },
+         cancellation_policy: {
+           details: string
+         },
+         refund_policy: {
+           details: string
+         },
+         dispute_resolution: {
+           details: string
+         },
+         other_terms: {
+           technical_specs: string,
+           general_terms: string
+         },
+         contract_date: string,
+         title: string
+       },
+       rationale: {
+         reason: {
+           item_details?: string,
+           payment?: string,
+           delivery?: string,
+           cancellation_policy?: string,
+           contract_date?: string,
+           dispute_resolution?: string,
+           escrow?: string,
+           other_terms?: string,
+           parties?: string,
+           refund_policy?: string
+         }
+       },
+       summary: {
+         final_summary: string
+       }
+     }
+   - 참고: 모든 일반 프로퍼티는 string 타입
 
 5) PUT /api/contracts/{id}
    // 수정 필요

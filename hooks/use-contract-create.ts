@@ -1,29 +1,49 @@
 import { useState, useCallback } from 'react';
-import type { ContractData, CreateContractRequest, CreateContractResponse } from '@/types/contract';
+import type { 
+  ContractData, 
+  ContractDataLegacy,
+  ContractCreateResponse,
+  CreateContractRequest, 
+} from '@/types/contract';
 import { api } from '@/lib/api';
 
+// UI 폼 데이터 구조 (새로운 API 구조와 매핑)
 export interface ContractFormData {
+  // other_terms.technical_specs
   category?: string;
+  // item_details.name
   productName?: string;
-  modelName?: string;
-  deposit?: string;
-  balance?: string;
+  // payment.price
+  price?: string;
+  // payment.price_method
+  priceMethod?: string;
+  // payment.payment_method, payment.payment_schedule
   paymentMethod?: string;
-  deliveryInfo?: string;
+  paymentSchedule?: string;
+  // delivery.method, delivery.schedule
+  deliveryMethod?: string;
+  deliverySchedule?: string;
+  // item_details.condition_and_info
   itemCondition?: string;
+  // refund_policy.details
   returnPolicy?: string;
+  // dispute_resolution.details
   disputeResolution?: string;
+  // cancellation_policy.details
   breachOfContract?: string;
+  // other_terms.general_terms
   otherTerms?: string;
+  // escrow.details (청약철회 및 계약해제)
+  escrow?: string;
 }
 
 // 필수 필드 검증
 const REQUIRED_FIELDS: (keyof ContractFormData)[] = [
   'category',
   'productName',
-  'deposit',
+  'price',
   'paymentMethod',
-  'deliveryInfo',
+  'deliveryMethod',
 ];
 
 export function useContractCreate() {
@@ -33,6 +53,20 @@ export function useContractCreate() {
   const [isAIGenerated, setIsAIGenerated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rationale, setRationale] = useState<{
+    reason: {
+      item_details?: string;
+      payment?: string;
+      delivery?: string;
+      cancellation_policy?: string;
+      contract_date?: string;
+      dispute_resolution?: string;
+      escrow?: string;
+      other_terms?: string;
+      parties?: string;
+      refund_policy?: string;
+    };
+  } | null>(null);
 
   const updateField = useCallback((field: keyof ContractFormData, value: string) => {
     setFormData((prev) => ({
@@ -54,13 +88,35 @@ export function useContractCreate() {
     setSignatureImage(null);
   }, []);
 
-  const loadAIGeneratedContract = useCallback((contractData: ContractData) => {
+  // 새로운 API 구조의 ContractData를 폼 데이터로 변환
+  const loadAIGeneratedContract = useCallback((contract: ContractData) => {
+    setFormData({
+      category: contract.other_terms?.technical_specs || '',
+      productName: contract.item_details?.name || '',
+      price: contract.payment?.price || '',
+      priceMethod: contract.payment?.price_method || '',
+      paymentMethod: contract.payment?.payment_method || '',
+      paymentSchedule: contract.payment?.payment_schedule || '',
+      deliveryMethod: contract.delivery?.method || '',
+      deliverySchedule: contract.delivery?.schedule || '',
+      itemCondition: contract.item_details?.condition_and_info || '',
+      returnPolicy: contract.refund_policy?.details || '',
+      disputeResolution: contract.dispute_resolution?.details || '',
+      breachOfContract: contract.cancellation_policy?.details || '',
+      otherTerms: contract.other_terms?.general_terms || '',
+      escrow: contract.escrow?.details || '',
+    });
+    setIsAIGenerated(true);
+  }, []);
+
+  // 기존 ContractDataLegacy 구조 지원 (하위 호환성)
+  const loadAIGeneratedContractLegacy = useCallback((contractData: ContractDataLegacy) => {
     setFormData({
       category: contractData.item?.name || '',
       productName: contractData.item?.name || '',
-      deposit: contractData.payment?.price || '',
+      price: contractData.payment?.price || '',
       paymentMethod: contractData.payment?.method || '',
-      deliveryInfo: contractData.delivery?.location || contractData.delivery?.method || '',
+      deliveryMethod: contractData.delivery?.location || contractData.delivery?.method || '',
       itemCondition: contractData.item?.condition || '',
       returnPolicy: '계약내용과 일치하는 한 단순 변심에 의한 반품 및 교환 불가능',
       breachOfContract: '3일 안에 미발송시 매수인에게 계약금을 환불해줘야해요',
@@ -75,9 +131,9 @@ export function useContractCreate() {
         const fieldNames: Record<string, string> = {
           category: '카테고리',
           productName: '거래품목/모델명',
-          deposit: '계약금',
-          paymentMethod: '지불 방법 및 시기',
-          deliveryInfo: '거래 시기 및 장소',
+          price: '매매금액',
+          paymentMethod: '지불 방법',
+          deliveryMethod: '거래 방법',
         };
         return `${fieldNames[field]}를 입력해주세요.`;
       }
@@ -147,8 +203,22 @@ export function useContractCreate() {
         roomId: request.roomId ?? '',
       });
 
-      if (response?.isSuccess && typeof response.data === 'object') {
-        loadAIGeneratedContract(response.data as ContractData);
+      // 새로운 API 응답 구조 처리
+      if (response && 'contract' in response) {
+        loadAIGeneratedContract(response.contract);
+        if (response.summary?.final_summary) {
+          setSummary(response.summary.final_summary);
+        }
+        if (response.rationale) {
+          setRationale(response.rationale);
+        }
+      }
+      // 기존 API 응답 구조 처리 (하위 호환성)
+      else if (response && 'isSuccess' in response && response.isSuccess && typeof response.data === 'object') {
+        loadAIGeneratedContractLegacy(response.data as ContractDataLegacy);
+        if (response.summary) {
+          setSummary(response.summary);
+        }
       }
 
       console.log('계약서 제출:', { contractData, request, response });
@@ -173,11 +243,13 @@ export function useContractCreate() {
     isAIGenerated,
     loading,
     error,
+    rationale,
     updateField,
     setSummary: handleSummaryChange,
     handleSignatureUpload,
     handleSignatureRemove,
     loadAIGeneratedContract,
+    loadAIGeneratedContractLegacy,
     saveDraft,
     loadDraft,
     submitContract,
