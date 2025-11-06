@@ -41,7 +41,10 @@ export function useNotification(userId: string | number | null) {
   // WebSocket 연결 및 알림 구독
   useEffect(() => {
     if (!userId) {
-      console.log("[useNotification] No userId provided, skipping connection");
+      // 초기 렌더링 시 userId가 없는 것은 정상이므로 debug 레벨로 로그
+      if (process.env.NODE_ENV === "development") {
+        console.debug("[useNotification] No userId provided, skipping connection");
+      }
       return;
     }
 
