@@ -140,11 +140,11 @@ export default function ChatRoomPage() {
     : product?.price || "";
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 py-6">
-      <div className="mx-auto max-w-[1400px] w-full px-5 flex-1 flex flex-col min-h-0">
-        <div className="flex gap-6 flex-1 min-h-0">
+    <div className="flex-1 flex flex-col py-6 min-h-0 overflow-hidden">
+      <div className="max-w-[1400px] w-full flex-1 flex flex-col min-h-0">
+        <div className="flex gap-6 flex-1 min-h-0 overflow-hidden">
           {/* 왼쪽 영역: 상품 정보 */}
-          <div className="flex-shrink-0 w-[380px]">
+          <div className="flex-shrink-0 w-[380px] overflow-y-auto">
             {product ? (
               <div className="bg-white rounded-[27px] p-6 shadow-sm">
                 {/* 상품 이미지 */}
@@ -231,9 +231,9 @@ export default function ChatRoomPage() {
           </div>
 
           {/* 오른쪽 영역: 채팅 */}
-          <div className="flex-1 min-w-0 flex flex-col min-h-0">
-            <ChatRoom 
-              messages={formattedMessages} 
+          <div className="flex-1 min-w-0 min-h-0">
+            <ChatRoom
+              messages={formattedMessages}
               onSend={handleSendMessage}
             />
           </div>

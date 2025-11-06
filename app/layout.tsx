@@ -28,12 +28,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden`}>
         <MSWProvider>
           <ReactQueryProvider>
-            <div className="min-h-screen flex flex-col">
+            <div className="h-screen flex flex-col overflow-hidden">
               <Navbar />
-              <main className="mx-auto w-full max-w-[1512px] flex-1 px-5 flex flex-col">
+              <main className="mx-auto w-full max-w-[1512px] flex-1 px-5 flex flex-col min-h-0 overflow-hidden">
                 {children}
               </main>
               <Footer />
