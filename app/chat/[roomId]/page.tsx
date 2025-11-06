@@ -244,8 +244,9 @@ export default function ChatRoomPage() {
 }
 
 // 타임스탬프 포맷팅 함수
-function formatTimestamp(timestamp: string): string {
+function formatTimestamp(timestamp: string | number): string {
   try {
+    // timestamp가 숫자(밀리초)이거나 문자열 모두 처리 가능
     const date = new Date(timestamp);
     const hours = date.getHours();
     const minutes = date.getMinutes();

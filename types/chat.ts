@@ -16,7 +16,7 @@ export interface ChatMessage {
   senderId: number | string;
   content: string;
   message?: string;
-  timestamp: string;
+  timestamp: string | number; // 서버에서 받을 때 number(밀리초) 또는 string 형식 지원
   status?: 'pending' | 'sent' | 'failed';
   meta?: {
     readCount?: number;
@@ -109,12 +109,12 @@ export interface WebSocketMessage {
   senderId: number | string;
   message: string;
   clientMessageId?: string;
-  timestamp?: string;
+  timestamp?: number; // 백엔드 LocalDateTime 호환을 위해 밀리초(Long) 타입으로 전송
 }
 
 // ===== 통합 상태 모델 =====
 
-export interface ExtendedChatRoom extends ChatRoom {
+export interface ExtendedChatRoom extends Omit<ChatRoom, 'lastMessage'> {
   messages: ChatMessage[];
   lastMessage?: ChatMessage;
   unreadCount?: number;

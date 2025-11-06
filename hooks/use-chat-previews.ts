@@ -17,14 +17,14 @@ function toDisplayPrice(price?: string) {
   return `${numericPrice.toLocaleString()}원`;
 }
 
-function formatTimestamp(timestamp?: string) {
+function formatTimestamp(timestamp?: string | number) {
   if (!timestamp) {
     return "방금 전";
   }
 
   const date = new Date(timestamp);
   if (Number.isNaN(date.getTime())) {
-    return timestamp;
+    return typeof timestamp === 'string' ? timestamp : "방금 전";
   }
 
   const now = Date.now();

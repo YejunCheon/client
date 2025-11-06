@@ -377,7 +377,7 @@ class StompClientManager {
         senderId: message.senderId,
         content: message.message,
         message: message.message,
-        timestamp: message.timestamp || new Date().toISOString(),
+        timestamp: message.timestamp || Date.now(), // 밀리초 기반 숫자로 통일
       };
 
       console.log('[STOMP] Mock: Creating message:', chatMessage);
@@ -428,7 +428,7 @@ class StompClientManager {
         roomId: message.roomId,
         senderId: message.senderId,
         message: message.message,
-        timestamp: message.timestamp || new Date().toISOString(),
+        timestamp: Date.now(), // 백엔드 LocalDateTime 호환을 위해 밀리초 기반 숫자로 전송
         clientMessageId: message.clientMessageId,
       });
 
@@ -670,6 +670,6 @@ export function createWebSocketMessage(
     senderId,
     message,
     clientMessageId: clientMessageId || crypto.randomUUID(),
-    timestamp: new Date().toISOString(),
+    timestamp: Date.now(), // 백엔드 LocalDateTime 호환을 위해 밀리초 기반 숫자로 전송
   };
 }
