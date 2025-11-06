@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   FileImage,
   Lock,
@@ -9,7 +9,6 @@ import {
   ShieldAlert,
   ShieldCheck,
   User,
-  UserCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,28 +24,10 @@ interface AuthScreenProps {
 }
 
 const VERIFY_TOKEN_STORAGE_KEY = "dealchain:verify_token";
-const VERIFY_STATE_STORAGE_KEY = "dealchain:verify_state";
 
 interface StoredVerifyToken {
   token: string;
   issuedAt: number;
-}
-
-interface StoredVerifyState {
-  value: string;
-  createdAt: number;
-}
-
-function createNonce(bytes = 24): string {
-  const buffer = new Uint8Array(bytes);
-  if (typeof globalThis !== "undefined" && globalThis.crypto?.getRandomValues) {
-    globalThis.crypto.getRandomValues(buffer);
-  } else {
-    for (let i = 0; i < buffer.length; i += 1) {
-      buffer[i] = Math.floor(Math.random() * 256);
-    }
-  }
-  return Array.from(buffer, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 function resolveReturnUrl(value?: string | null): string {
@@ -66,6 +47,7 @@ export default function AuthScreen({
   returnUrl,
 }: AuthScreenProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login: setAuth } = useAuthStore();
   const verifyTtlSeconds = config.verifyTokenTtlSeconds;
   const verifyTtlMs = config.verifyTokenTtlSeconds * 1000;
@@ -84,7 +66,6 @@ export default function AuthScreen({
     userId: "",
     password: "",
     confirmPassword: "",
-    name: "",
     signatureImage: null as File | null,
   });
 
@@ -109,6 +90,29 @@ export default function AuthScreen({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    // URL 파라미터에서 토큰 확인 (본인인증 서버에서 리다이렉트된 경우)
+    const tokenFromUrl = searchParams.get("token");
+    if (tokenFromUrl) {
+      const tokenData: StoredVerifyToken = {
+        token: tokenFromUrl,
+        issuedAt: Date.now(),
+      };
+      window.sessionStorage.setItem(
+        VERIFY_TOKEN_STORAGE_KEY,
+        JSON.stringify(tokenData)
+      );
+      setVerifyToken(tokenFromUrl);
+      setVerifyIssuedAt(Date.now());
+      setTimeRemaining(verifyTtlMs);
+
+      // URL에서 토큰 파라미터 제거
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete("token");
+      window.history.replaceState({}, "", newUrl.toString());
+      return;
+    }
+
+    // 세션 스토리지에서 토큰 확인
     const raw = window.sessionStorage.getItem(VERIFY_TOKEN_STORAGE_KEY);
     if (!raw) return;
 
@@ -131,7 +135,7 @@ export default function AuthScreen({
     } catch {
       window.sessionStorage.removeItem(VERIFY_TOKEN_STORAGE_KEY);
     }
-  }, [verifyTtlMs]);
+  }, [verifyTtlMs, searchParams]);
 
   useEffect(() => {
     if (!verifyToken || !verifyIssuedAt) {
@@ -185,24 +189,9 @@ export default function AuthScreen({
 
     clearVerifyToken();
 
-    const state = createNonce(24);
-    const statePayload: StoredVerifyState = {
-      value: state,
-      createdAt: Date.now(),
-    };
+    console.log("본인인증 서버로 리다이렉트:", config.verifyStartUrl);
 
-    window.sessionStorage.setItem(
-      VERIFY_STATE_STORAGE_KEY,
-      JSON.stringify(statePayload)
-    );
-
-    const callbackUrl = new URL(config.verifyCallbackPath, window.location.origin);
-    const verifyUrl = new URL(config.verifyStartUrl, window.location.origin);
-
-    verifyUrl.searchParams.set("redirect_uri", callbackUrl.toString());
-    verifyUrl.searchParams.set("state", state);
-
-    window.location.href = verifyUrl.toString();
+    window.location.href = config.verifyStartUrl;
   }, [clearVerifyToken]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -264,8 +253,7 @@ export default function AuthScreen({
         if (
           !signupData.userId ||
           !signupData.password ||
-          !signupData.confirmPassword ||
-          !signupData.name
+          !signupData.confirmPassword
         ) {
           setError("필수 정보를 모두 입력해주세요.");
           return;
@@ -291,18 +279,17 @@ export default function AuthScreen({
         const response = await api.members.register({
           id: signupData.userId.trim(),
           password: signupData.password,
-          name: signupData.name.trim(),
           token: verifyToken,
           signatureImage: signupData.signatureImage,
         });
 
         const signupId = response.id ?? response.userId;
 
-        if (response.success && response.memberId && signupId && response.name) {
+        if (response.success && response.memberId && signupId) {
           const user = {
             id: response.memberId.toString(),
             userId: signupId,
-            name: response.name,
+            name: response.name || "",
             ci: response.ci,
             signatureImage: response.signatureImage ?? null,
             verified: true,
@@ -312,7 +299,6 @@ export default function AuthScreen({
             userId: "",
             password: "",
             confirmPassword: "",
-            name: "",
             signatureImage: null,
           });
           router.push(resolveReturnUrl(returnUrl));
@@ -483,24 +469,6 @@ export default function AuthScreen({
                       value={signupData.confirmPassword}
                       onChange={handleSignupInputChange}
                       placeholder="비밀번호를 다시 입력하세요"
-                      required
-                      className="h-9 border-0 bg-[#f3f3f5] pl-10"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-[14px] font-medium text-neutral-950">
-                    이름
-                  </label>
-                  <div className="relative">
-                    <UserCircle className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#717182]" />
-                    <Input
-                      name="name"
-                      type="text"
-                      value={signupData.name}
-                      onChange={handleSignupInputChange}
-                      placeholder="이름을 입력하세요"
                       required
                       className="h-9 border-0 bg-[#f3f3f5] pl-10"
                     />
