@@ -46,17 +46,22 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface LoginResponse {
-  success: boolean;
-  message: string;
-  memberId?: number;
-  id?: string;
-  userId?: string;
-  name?: string;
-  token?: string;
-  signatureImage?: string | null;
-  ci?: string;
-}
+export type LoginResponse =
+  | {
+      success: true;
+      message: string;
+      memberId: number;
+      id: string;
+      userId: string;
+      name?: string;
+      token: string;
+      signatureImage?: string | null;
+      ci?: string;
+    }
+  | {
+      success: false;
+      message: string;
+    };
 
 export interface GetMemberResponse {
   success: boolean;

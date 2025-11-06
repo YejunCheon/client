@@ -28,23 +28,6 @@ function findRoomByParticipants(
   );
 }
 
-function resolveRoomId(request: ChatMessagesRequest): string | undefined {
-  if (request.roomId) {
-    return request.roomId;
-  }
-
-  if (request.seller != null && request.buyer != null) {
-    const room = findRoomByParticipants(
-      request.seller,
-      request.buyer,
-      request.productId
-    );
-    return room?.roomId;
-  }
-
-  return undefined;
-}
-
 function toNumber(value: number | string): number | null {
   if (typeof value === 'number') return value;
   const parsed = Number(value);
@@ -54,10 +37,22 @@ function toNumber(value: number | string): number | null {
 export function createMockChatApi(): ChatApi {
   return {
     async createRoom(payload: ChatRoomRequest): Promise<ChatRoomResponse> {
+      const sellerId = toNumber(payload.seller);
+      const buyerId = toNumber(payload.buyer);
+      const productId = payload.productId ? toNumber(payload.productId) : undefined;
+      
+      if (sellerId == null || buyerId == null) {
+        return respond({
+          roomId: '',
+          isSuccess: false,
+          reason: 'Invalid seller or buyer ID',
+        });
+      }
+
       const existing = findRoomByParticipants(
-        payload.seller,
-        payload.buyer,
-        payload.productId
+        sellerId,
+        buyerId,
+        productId ?? undefined
       );
 
       if (existing) {
@@ -72,9 +67,9 @@ export function createMockChatApi(): ChatApi {
       const newRoomId = generateId('room');
       const newRoom: ChatRoom = {
         roomId: newRoomId,
-        sellerId: payload.seller,
-        buyerId: payload.buyer,
-        productId: payload.productId,
+        sellerId: sellerId,
+        buyerId: buyerId,
+        productId: productId ?? 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -92,8 +87,7 @@ export function createMockChatApi(): ChatApi {
     async getMessages(
       payload: ChatMessagesRequest
     ): Promise<ChatMessagesResponse> {
-      const roomId =
-        payload.roomId ?? resolveRoomId(payload);
+      const roomId = payload.roomId;
 
       if (!roomId) {
         return respond({

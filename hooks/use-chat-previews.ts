@@ -91,10 +91,9 @@ async function resolveChatPreview(room: {
         } as ProductResponse),
     api.chat.getMessages({
       roomId: room.roomId,
-      userId: viewerId,
+      user: viewerId,
       seller: room.sellerId,
       buyer: room.buyerId,
-      productId: room.productId,
     }).catch((error) => {
       console.warn(`[resolveChatPreview] Failed to fetch messages for room ${room.roomId}:`, error);
       return {

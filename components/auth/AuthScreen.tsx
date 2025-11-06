@@ -224,11 +224,12 @@ export default function AuthScreen({
           password: loginData.password,
         });
 
-        const loginId = response.id ?? response.userId;
+        if (response.success) {
+          const memberId = response.memberId;
+          const loginId = response.userId ?? response.id;
 
-        if (response.success && response.memberId && loginId) {
           let resolvedUser = {
-            id: response.memberId.toString(),
+            id: memberId.toString(),
             userId: loginId,
             name: response.name ?? "",
             ci: response.ci,
@@ -238,7 +239,7 @@ export default function AuthScreen({
 
           if (!response.name || response.name.trim() === "") {
             try {
-              const profileResponse = await api.members.getProfile(response.memberId);
+              const profileResponse = await api.members.getProfile(memberId);
               if (profileResponse.success && profileResponse.member) {
                 resolvedUser = {
                   id: String(profileResponse.member.memberId),
@@ -254,7 +255,7 @@ export default function AuthScreen({
             }
           }
 
-          await setAuth(resolvedUser, response.token ?? "");
+          await setAuth(resolvedUser, response.token);
           router.push(resolveReturnUrl(returnUrl));
         } else {
           setError(response.message || "로그인에 실패했습니다.");
@@ -306,7 +307,7 @@ export default function AuthScreen({
             signatureImage: response.signatureImage ?? null,
             verified: true,
           };
-          await setAuth(user, "");
+          await setAuth(user, null);
           setSignupData({
             userId: "",
             password: "",

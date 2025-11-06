@@ -46,7 +46,7 @@ export function createMembersApi(client: AuthHttpClient = defaultClient): Member
     },
 
     login(payload) {
-      return client.post('/api/members/login', {
+      return client.post<LoginResponse>('/api/members/login', {
         id: payload.id,
         password: payload.password,
       });

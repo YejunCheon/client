@@ -50,8 +50,7 @@ export interface ChatMessagesRequest {
   roomId?: string;
   seller?: number | string;
   buyer?: number | string;
-  productId?: number | string;
-  userId: number | string;
+  user: number | string; // 누가 요청하는지
 }
 
 export interface ChatMessagesResponse {

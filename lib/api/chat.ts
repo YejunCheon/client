@@ -28,13 +28,35 @@ function normalizeRoomPayload(payload: ChatRoomRequest) {
 }
 
 function normalizeMessagesPayload(payload: ChatMessagesRequest) {
-  return {
-    ...payload,
-    seller: toNumeric(payload.seller),
-    buyer: toNumeric(payload.buyer),
-    productId: toNumeric(payload.productId),
-    userId: toNumeric(payload.userId),
+  // user는 필수 필드이므로 항상 포함되어야 함
+  if (payload.user == null) {
+    throw new Error('user field is required for getMessages request');
+  }
+
+  // 모든 필수를 포함한 객체 생성 (undefined가 되지 않도록 보장)
+  const normalized: {
+    roomId?: string;
+    seller?: number | string;
+    buyer?: number | string;
+    user: number | string;
+  } = {
+    user: toNumeric(payload.user) ?? payload.user,
   };
+
+  // roomId는 필수는 아니지만 있으면 포함
+  if (payload.roomId) {
+    normalized.roomId = payload.roomId;
+  }
+  
+  // seller와 buyer는 선택적이지만 있으면 포함
+  if (payload.seller != null) {
+    normalized.seller = toNumeric(payload.seller) ?? payload.seller;
+  }
+  if (payload.buyer != null) {
+    normalized.buyer = toNumeric(payload.buyer) ?? payload.buyer;
+  }
+
+  return normalized;
 }
 
 function normalizeRoomsPayload(payload: { userId: number | string }) {

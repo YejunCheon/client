@@ -1,6 +1,5 @@
 "use client";
 
-import ChatRoom from "@/components/chat/ChatRoom";
 import { useAuthGuard } from "@/hooks/use-auth-guard";
 import { useParams, useRouter } from "next/navigation";
 import { useChat } from "@/hooks/use-chat";
@@ -11,14 +10,17 @@ import Image from "next/image";
 import { FileText } from "lucide-react";
 import { normalizeImageUrl } from "@/lib/utils";
 import { useIsClient } from "@/hooks/use-is-client";
+import ChatRoom from "@/components/chat/ChatRoom";
+import { useMockApi } from "@/lib/api";
 
 export default function ChatRoomPage() {
   const isClient = useIsClient();
   const { isAuthenticated } = useAuthGuard();
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const roomId = params.roomId as string;
+  const isMockApiMode = useMockApi();
   
   const { 
     chatRooms, 
@@ -48,8 +50,8 @@ export default function ChatRoomPage() {
     const initializeChat = async () => {
       if (!isWebSocketConnected) {
         try {
-          // HTTP-only 쿠키가 자동으로 전달되므로 토큰 파라미터 불필요
-          await connectWebSocket();
+          const authTokenForWs = isMockApiMode ? undefined : token ?? undefined;
+          await connectWebSocket(authTokenForWs);
         } catch (error) {
           console.error('Failed to connect WebSocket:', error);
           return;
@@ -62,7 +64,16 @@ export default function ChatRoomPage() {
     };
 
     initializeChat();
-  }, [roomId, user?.id, currentRoomId, selectRoom, connectWebSocket, isWebSocketConnected]);
+  }, [
+    roomId,
+    user?.id,
+    token,
+    currentRoomId,
+    selectRoom,
+    connectWebSocket,
+    isWebSocketConnected,
+    isMockApiMode,
+  ]);
 
   // 메시지 형식 변환
   const formattedMessages = useMemo(() => {

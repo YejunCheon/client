@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import type { Member, User } from '@/types';
 
 const AUTH_USER_STORAGE_KEY = 'auth_user';
-const AUTH_TOKEN_STORAGE_KEY = 'auth_token';
+export const AUTH_TOKEN_STORAGE_KEY = 'auth_token';
 
 type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
 
