@@ -1,2 +1,11 @@
 node_modules
 .next/
+
+# 환경 변수 파일
+.env
+.env*.local
+
+# 개발/프로덕션 환경 설정은 커밋 가능 (팀 공유)
+!.env.development
+!.env.production
+!.env.example

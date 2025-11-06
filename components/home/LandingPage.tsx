@@ -73,12 +73,12 @@ export default function LandingPage() {
             >
               상품 둘러보기
             </Link>
-            <Link
-              href="/product/create"
-              className="bg-white text-[#2487f8] border-2 border-[#2487f8] px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-50 transition-all"
+            <button
+              onClick={() => alert('상품 판매기능은 준비 중이에요!')}
+              className="bg-white text-[#2487f8] border-2 border-[#2487f8] px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-50 transition-all cursor-pointer"
             >
               내 상품 판매하기
-            </Link>
+            </button>
           </div>
         </div>
       </section>
@@ -133,7 +133,7 @@ export default function LandingPage() {
       <section className="w-full py-16 pb-20 relative z-10">
         <div className="mx-auto max-w-[1512px] px-5">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold text-[#222]">✨ 최신 상품</h2>
+            <h2 className="text-3xl font-bold text-[#222]">최신 상품</h2>
             <Link href="/product/list" className="text-[#2487f8] hover:underline text-lg">
               전체보기 →
             </Link>

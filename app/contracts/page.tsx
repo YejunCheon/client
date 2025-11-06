@@ -2,11 +2,13 @@
 
 import React from "react";
 import { useAuthGuard } from "@/hooks/use-auth-guard";
+import { useIsClient } from "@/hooks/use-is-client";
 
 export default function ContractsPage() {
+  const isClient = useIsClient();
   const { isAuthenticated } = useAuthGuard();
 
-  if (!isAuthenticated) {
+  if (!isClient || !isAuthenticated) {
     return null; // 리다이렉트 중
   }
 
@@ -21,4 +23,3 @@ export default function ContractsPage() {
     </div>
   );
 }
-

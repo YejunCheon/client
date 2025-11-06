@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { api } from "@/lib/api";
-import type { ChatPreview, ChatMessage } from "@/types/chat";
+import type { ChatPreview, ChatMessage, ChatMessagesResponse } from "@/types/chat";
 import type { ProductResponse } from "@/types/product";
 
 function toDisplayPrice(price?: string) {
@@ -78,7 +78,13 @@ async function resolveChatPreview(room: {
 
   const [productRes, messagesRes] = await Promise.all([
     numericProductId != null
-      ? api.products.get(numericProductId)
+      ? api.products.get(numericProductId).catch((error) => {
+          console.warn(`[resolveChatPreview] Failed to fetch product ${numericProductId}:`, error);
+          return {
+            success: false,
+            product: undefined,
+          } as ProductResponse;
+        })
       : Promise.resolve({
           success: false,
           product: undefined,
@@ -89,6 +95,13 @@ async function resolveChatPreview(room: {
       seller: room.sellerId,
       buyer: room.buyerId,
       productId: room.productId,
+    }).catch((error) => {
+      console.warn(`[resolveChatPreview] Failed to fetch messages for room ${room.roomId}:`, error);
+      return {
+        roomId: room.roomId,
+        messages: [],
+        success: false,
+      } as ChatMessagesResponse;
     }),
   ]);
 

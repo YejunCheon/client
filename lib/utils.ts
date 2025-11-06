@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { config as appConfig } from "@/lib/config";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -19,19 +20,40 @@ export function normalizeImageUrl(imageUrl: string | null | undefined): string {
     return imageUrl;
   }
 
+  // 로컬 경로인 경우 (/assets/ 등)
+  if (imageUrl.startsWith('/assets/')) {
+    return imageUrl;
+  }
+
+  // 클라이언트 사이드에서는 항상 절대 URL 사용
+  if (typeof window !== 'undefined') {
+    // API 서버 URL 가져오기 (config에서 환경 변수를 가져옴)
+    const apiServer = appConfig.apiUrl || process.env.NEXT_PUBLIC_API_URL || '';
+    
+    // 이미 상대 경로로 시작하는 경우 (/로 시작)
+    if (imageUrl.startsWith('/')) {
+      // /uploads/로 시작하는 경우 API 서버 URL과 결합
+      if (imageUrl.startsWith('/uploads/')) {
+        return `${apiServer}${imageUrl}`;
+      }
+      return imageUrl;
+    }
+
+    // 상대 경로인 경우 (uploads/products/...)
+    // API 서버 URL과 결합하여 절대 URL 생성
+    const path = imageUrl.startsWith('uploads/') ? `/${imageUrl}` : `/uploads/${imageUrl}`;
+    return `${apiServer}${path}`;
+  }
+
+  // 서버 사이드: 프록시 경로 사용
   // 이미 상대 경로로 시작하는 경우 (/로 시작)
   if (imageUrl.startsWith('/')) {
-    // /uploads/로 시작하는 경우 프록시를 통해 처리
-    if (imageUrl.startsWith('/uploads/')) {
-      return imageUrl; // 프록시가 처리함
-    }
-    // /assets/ 같은 로컬 경로는 그대로 반환
     return imageUrl;
   }
 
   // 상대 경로인 경우 (uploads/products/...)
-  // 프록시를 통해 같은 도메인으로 요청
-  return `/uploads/${imageUrl}`;
+  const path = imageUrl.startsWith('uploads/') ? `/${imageUrl}` : `/uploads/${imageUrl}`;
+  return path;
 }
 
 export function sanitizeHtml(html: string): string {

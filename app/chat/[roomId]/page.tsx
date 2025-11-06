@@ -10,8 +10,10 @@ import { useEffect, useMemo } from "react";
 import Image from "next/image";
 import { FileText } from "lucide-react";
 import { normalizeImageUrl } from "@/lib/utils";
+import { useIsClient } from "@/hooks/use-is-client";
 
 export default function ChatRoomPage() {
+  const isClient = useIsClient();
   const { isAuthenticated } = useAuthGuard();
   const params = useParams();
   const router = useRouter();
@@ -42,14 +44,24 @@ export default function ChatRoomPage() {
   // 채팅방 선택 및 WebSocket 연결
   useEffect(() => {
     if (!roomId || !user?.id) return;
-    
-    if (!isWebSocketConnected) {
-      connectWebSocket();
-    }
-    
-    if (roomId !== currentRoomId) {
-      selectRoom(roomId);
-    }
+
+    const initializeChat = async () => {
+      if (!isWebSocketConnected) {
+        try {
+          // HTTP-only 쿠키가 자동으로 전달되므로 토큰 파라미터 불필요
+          await connectWebSocket();
+        } catch (error) {
+          console.error('Failed to connect WebSocket:', error);
+          return;
+        }
+      }
+
+      if (roomId !== currentRoomId) {
+        selectRoom(roomId);
+      }
+    };
+
+    initializeChat();
   }, [roomId, user?.id, currentRoomId, selectRoom, connectWebSocket, isWebSocketConnected]);
 
   // 메시지 형식 변환
@@ -106,7 +118,7 @@ export default function ChatRoomPage() {
     }
   };
 
-  if (!isAuthenticated) {
+  if (!isClient || !isAuthenticated) {
     return null; // 리다이렉트 중
   }
 
@@ -233,4 +245,3 @@ function formatTimestamp(timestamp: string): string {
     return "";
   }
 }
-

@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useProductsList } from "@/hooks/use-products";
+import { normalizeImageUrl } from "@/lib/utils";
 import type { Product, ProductListResponse } from "@/types";
 
 const img5 = "/assets/7aa7c9611c3f8ff422da5e3f2517977e63048d54.png";
@@ -31,7 +32,7 @@ function ProductCard({ product }: { product: Product }) {
           <img
             alt={product.productName}
             className="absolute inset-0 max-w-none object-50%-50% object-cover pointer-events-none rounded-tl-[28px] rounded-tr-[28px] size-full"
-            src={product.productImage || img5}
+            src={normalizeImageUrl(product.productImage) || img5}
           />
         </div>
         <div className="[grid-area:1_/_1] box-border content-stretch flex flex-col gap-[6px] items-center justify-center ml-[15px] mt-[312.5px] relative w-[289px]" data-name="카드 내용">

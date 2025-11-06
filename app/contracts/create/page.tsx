@@ -9,8 +9,10 @@ import { useContractCreate } from '@/hooks/use-contract-create';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useAuthStore } from '@/lib/store/auth';
 import { Send } from 'lucide-react';
+import { useIsClient } from '@/hooks/use-is-client';
 
 export default function ContractCreatePage() {
+  const isClient = useIsClient();
   const { isAuthenticated } = useAuthGuard();
   const {
     formData,
@@ -39,7 +41,7 @@ export default function ContractCreatePage() {
     }
   }, [loadDraft, isAuthenticated]);
 
-  if (!isAuthenticated) {
+  if (!isClient || !isAuthenticated) {
     return null; // 리다이렉트 중
   }
 

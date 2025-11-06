@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useAuthGuard } from "@/hooks/use-auth-guard";
 import { useAuthStore } from "@/lib/store/auth";
 import { useChatPreviews } from "@/hooks/use-chat-previews";
+import { useIsClient } from "@/hooks/use-is-client";
 
 const filters = [
   { id: "IN_PROGRESS" satisfies ChatProgressStatus, label: "거래 진행중" },
@@ -19,6 +20,7 @@ const filters = [
 type FilterId = (typeof filters)[number]["id"];
 
 export default function ChatsPage() {
+  const isClient = useIsClient();
   const { isAuthenticated } = useAuthGuard();
   const { user } = useAuthStore();
   const viewerId = user?.id ?? null;
@@ -62,7 +64,7 @@ export default function ChatsPage() {
   const activeCount = filteredChats.length;
   const totalCount = previews.length;
 
-  if (!isAuthenticated) {
+  if (!isClient || !isAuthenticated) {
     return null; // 리다이렉트 중
   }
 
