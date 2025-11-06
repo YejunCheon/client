@@ -215,16 +215,61 @@ export default function AuthScreen({
         const loginId = response.id ?? response.userId;
 
         if (response.success && response.memberId && loginId) {
-          const user = {
-            id: response.memberId.toString(),
-            userId: loginId,
-            name: response.name ?? "",
-            ci: response.ci,
-            signatureImage: response.signatureImage ?? null,
-            verified: true,
-          };
-          setAuth(user, response.token ?? "");
-          router.push(returnUrl || "/");
+          // 로그인 응답에 name이 없거나 빈 문자열인 경우 getProfile API 호출
+          if (!response.name || response.name.trim() === "") {
+            try {
+              const profileResponse = await api.members.getProfile(response.memberId);
+              if (profileResponse.success && profileResponse.member) {
+                const user = {
+                  id: String(profileResponse.member.memberId),
+                  userId: profileResponse.member.id,
+                  name: profileResponse.member.name,
+                  ci: profileResponse.member.ci,
+                  signatureImage: profileResponse.member.signatureImage ?? null,
+                  verified: true,
+                };
+                setAuth(user, response.token ?? "");
+                router.push(returnUrl || "/");
+              } else {
+                // getProfile 실패 시에도 로그인은 유지하되, name은 빈 문자열로 설정
+                const user = {
+                  id: response.memberId.toString(),
+                  userId: loginId,
+                  name: response.name ?? "",
+                  ci: response.ci,
+                  signatureImage: response.signatureImage ?? null,
+                  verified: true,
+                };
+                setAuth(user, response.token ?? "");
+                router.push(returnUrl || "/");
+              }
+            } catch (error) {
+              // getProfile API 호출 실패 시에도 로그인은 유지
+              console.error("Failed to fetch user profile:", error);
+              const user = {
+                id: response.memberId.toString(),
+                userId: loginId,
+                name: response.name ?? "",
+                ci: response.ci,
+                signatureImage: response.signatureImage ?? null,
+                verified: true,
+              };
+              setAuth(user, response.token ?? "");
+              router.push(returnUrl || "/");
+            }
+          } else {
+            // 로그인 응답에 name이 있는 경우 바로 사용
+            const user = {
+              id: response.memberId.toString(),
+              userId: loginId,
+              name: response.name,
+              ci: response.ci,
+              signatureImage: response.signatureImage ?? null,
+              verified: true,
+            };
+            setAuth(user, response.token ?? "");
+            router.push(returnUrl || "/");
+          }
         } else {
           setError(response.message || "로그인에 실패했습니다.");
         }
