@@ -46,28 +46,32 @@ export interface ContractData {
 }
 
 export interface ContractRationale {
-  reason: {
-    item_details?: string;
-    payment?: string;
-    delivery?: string;
-    cancellation_policy?: string;
-    contract_date?: string;
-    dispute_resolution?: string;
-    escrow?: string;
-    other_terms?: string;
-    parties?: string;
-    refund_policy?: string;
-  };
+  item_details?: string;
+  payment?: string;
+  delivery?: string;
+  cancellation_policy?: string;
+  contract_date?: string;
+  dispute_resolution?: string;
+  escrow?: string;
+  other_terms?: string;
+  parties?: string;
+  refund_policy?: string;
 }
 
-export interface ContractSummary {
-  final_summary: string;
+export interface ContractResponseDto {
+  contract: ContractData;
+}
+
+export interface RationaleResponseDto {
+  rational: ContractRationale;
 }
 
 export interface ContractCreateResponse {
-  contract: ContractData;
-  rationale: ContractRationale;
-  summary: ContractSummary;
+  isSuccess: boolean;
+  contractResponseDto: ContractResponseDto;
+  rationaleResponseDto: RationaleResponseDto;
+  summary: string;
+  data?: string;
 }
 
 // 하위 호환성을 위한 별칭
@@ -112,13 +116,6 @@ export interface ContractCreateResponseLegacy {
   data: ContractDataLegacy | Record<string, unknown> | string;
   summary?: string;
   message?: string;
-}
-
-// 새로운 API 응답 타입 (유니온 타입으로 하위 호환성 유지)
-export type ContractCreateResponse = ContractCreateResponseLegacy | {
-  contract: ContractData;
-  rationale: ContractRationale;
-  summary: ContractSummary;
 }
 
 export type CreateContractRequest = ContractCreateRequest;
@@ -230,7 +227,7 @@ export enum ContractStatus {
   VOID = 'void',
 }
 
-export interface ContractSummary {
+export interface ContractListItem {
   id: string | number;
   contractId?: EntityId;
   roomId?: string;
@@ -245,7 +242,8 @@ export interface ContractSummary {
   updatedAt?: string;
 }
 
-export interface ContractListItem extends ContractSummary {}
+// ContractSummary는 ContractListItem의 별칭으로 하위 호환성 유지
+export interface ContractSummary extends ContractListItem {}
 
 export interface ContractListResponse {
   success: boolean;
