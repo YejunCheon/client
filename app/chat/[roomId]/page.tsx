@@ -44,14 +44,24 @@ export default function ChatRoomPage() {
   // 채팅방 선택 및 WebSocket 연결
   useEffect(() => {
     if (!roomId || !user?.id) return;
-    
-    if (!isWebSocketConnected) {
-      connectWebSocket();
-    }
-    
-    if (roomId !== currentRoomId) {
-      selectRoom(roomId);
-    }
+
+    const initializeChat = async () => {
+      if (!isWebSocketConnected) {
+        try {
+          // HTTP-only 쿠키가 자동으로 전달되므로 토큰 파라미터 불필요
+          await connectWebSocket();
+        } catch (error) {
+          console.error('Failed to connect WebSocket:', error);
+          return;
+        }
+      }
+
+      if (roomId !== currentRoomId) {
+        selectRoom(roomId);
+      }
+    };
+
+    initializeChat();
   }, [roomId, user?.id, currentRoomId, selectRoom, connectWebSocket, isWebSocketConnected]);
 
   // 메시지 형식 변환

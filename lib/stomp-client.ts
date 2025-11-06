@@ -56,42 +56,64 @@ class StompClientManager {
       }
 
       this.setStatus('connecting');
+      console.log('[STOMP] Attempting to connect to:', this.baseURL);
 
-      const tokenToUse = token || this.getToken();
-      if (!tokenToUse) {
-        const error = new Error('No authentication token found');
-        this.handleError(error);
-        reject(error);
-        return;
+      // 쿠키에서 토큰 가져오기 시도
+      const tokenToUse = token || this.getTokenFromCookie();
+      const connectHeaders: Record<string, string> = {};
+
+      if (tokenToUse) {
+        console.log('[STOMP] Using token for authorization (source:', token ? 'parameter' : 'cookie', ')');
+        connectHeaders['Authorization'] = `Bearer ${tokenToUse}`;
+      } else {
+        console.warn('[STOMP] No token found in parameter or cookie');
       }
 
       this.client = new Client({
-        webSocketFactory: () => new SockJS(this.baseURL) as any,
-        connectHeaders: {
-          Authorization: `Bearer ${tokenToUse}`,
+        webSocketFactory: () => {
+          console.log('[STOMP] Creating SockJS connection...');
+          // SockJS 옵션 설정
+          const sockjs = new SockJS(this.baseURL, null, {
+            transports: ['websocket', 'xhr-streaming', 'xhr-polling'],
+            timeout: 10000,
+          });
+
+          // SockJS 이벤트 리스너 추가 (디버깅용)
+          sockjs.onopen = () => {
+            console.log('[STOMP] SockJS connection opened');
+          };
+
+          return sockjs as any;
         },
+        connectHeaders,
         reconnectDelay: 0, // 수동 재연결 관리
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000,
         debug: (str) => {
           if (process.env.NODE_ENV === 'development') {
-            console.log('[STOMP]', str);
+            console.log('[STOMP Debug]', str);
           }
         },
-        onConnect: () => {
-          console.log('[STOMP] Connected');
+        onConnect: (frame) => {
+          console.log('[STOMP] Successfully connected', frame);
           this.setStatus('connected');
           this.reconnectAttempts = 0;
           this.processPendingMessages();
           resolve();
         },
         onStompError: (frame) => {
-          const errorMessage = frame.headers['message'] || 'STOMP connection error';
-          console.error('[STOMP] Error:', errorMessage);
-          
+          const errorMessage = frame.headers['message'] || frame.body || 'STOMP connection error';
+          console.error('[STOMP] STOMP Error Frame:', {
+            command: frame.command,
+            headers: frame.headers,
+            body: frame.body,
+          });
+
           // 401 에러 (인증 실패)
-          if (frame.headers['message']?.includes('401') || frame.headers['message']?.includes('Unauthorized')) {
+          if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Authentication')) {
+            console.error('[STOMP] Authentication failed');
             this.handleTokenExpired();
+            reject(new Error('Authentication failed'));
             return;
           }
 
@@ -430,14 +452,36 @@ class StompClientManager {
   }
 
   /**
-   * LocalStorage에서 토큰 가져오기
+   * 쿠키에서 JWT 토큰 가져오기
+   * HTTP-only 쿠키는 JavaScript로 접근 불가능하므로
+   * 일반 쿠키에 저장된 토큰을 읽습니다.
    */
-  private getToken(): string | null {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('auth_token');
+  private getTokenFromCookie(): string | null {
+    if (typeof document === 'undefined') {
+      return null;
     }
+
+    // 쿠키 파싱
+    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=');
+      acc[key] = value;
+      return acc;
+    }, {} as Record<string, string>);
+
+    // 가능한 토큰 쿠키 이름들을 시도
+    const tokenCookieNames = ['accessToken', 'token', 'jwt', 'auth_token', 'Authorization'];
+
+    for (const cookieName of tokenCookieNames) {
+      if (cookies[cookieName]) {
+        console.log(`[STOMP] Found token in cookie: ${cookieName}`);
+        return decodeURIComponent(cookies[cookieName]);
+      }
+    }
+
+    console.warn('[STOMP] No token found in any cookie');
     return null;
   }
+
 }
 
 // 싱글톤 인스턴스

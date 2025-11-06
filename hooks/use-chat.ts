@@ -40,10 +40,12 @@ export function useChat(userId: string | null) {
 
   /**
    * WebSocket 연결
+   * HTTP-only 쿠키를 사용하므로 토큰은 자동으로 전달됩니다.
    */
-  const connectWebSocket = useCallback(async (token?: string) => {
+  const connectWebSocket = useCallback(async () => {
     try {
-      await stompClient.connect(token);
+      // HTTP-only 쿠키가 자동으로 포함되므로 토큰 파라미터 불필요
+      await stompClient.connect();
     } catch (error) {
       console.error('Failed to connect WebSocket:', error);
       throw error;
