@@ -77,14 +77,21 @@ export default function ChatRoomPage() {
 
   // 메시지 형식 변환
   const formattedMessages = useMemo(() => {
-    return messages.map((msg) => ({
-      id: msg.messageId?.toString() || msg.clientMessageId || Date.now().toString(),
-      text: msg.content || msg.message || "",
-      senderId: msg.senderId.toString(),
-      isOwn: msg.senderId.toString() === user?.id?.toString(),
-      timestamp: msg.timestamp ? formatTimestamp(msg.timestamp) : "",
-    }));
-  }, [messages, user?.id]);
+    return messages.map((msg, index) => {
+      // 고유 ID 생성: messageId > clientMessageId > roomId + index + timestamp 조합
+      const uniqueId = msg.messageId?.toString()
+        || msg.clientMessageId
+        || `${roomId}-${index}-${msg.timestamp || Date.now()}`;
+
+      return {
+        id: uniqueId,
+        text: msg.content || msg.message || "",
+        senderId: msg.senderId.toString(),
+        isOwn: msg.senderId.toString() === user?.id?.toString(),
+        timestamp: msg.timestamp ? formatTimestamp(msg.timestamp) : "",
+      };
+    });
+  }, [messages, user?.id, roomId]);
 
   // 사용자가 판매자인지 구매자인지 확인
   const isSeller = useMemo(() => {
