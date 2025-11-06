@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { config } from "@/lib/config";
+import { useIsClient } from "@/hooks/use-is-client";
 
 const VERIFY_TOKEN_STORAGE_KEY = "dealchain:verify_token";
 const VERIFY_STATE_STORAGE_KEY = "dealchain:verify_state";
@@ -11,6 +12,7 @@ const VERIFY_STATE_STORAGE_KEY = "dealchain:verify_state";
 type CallbackStatus = "loading" | "success" | "error";
 
 export default function VerifyCallbackPage() {
+  const isClient = useIsClient();
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -144,6 +146,10 @@ export default function VerifyCallbackPage() {
       }
     };
   }, [errorParam, router, state, token, verifyTtlSeconds]);
+
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-[60vh] w-full flex-col items-center justify-center gap-6 px-6 text-center">

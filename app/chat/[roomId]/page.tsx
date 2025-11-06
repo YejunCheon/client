@@ -10,8 +10,10 @@ import { useEffect, useMemo } from "react";
 import Image from "next/image";
 import { FileText } from "lucide-react";
 import { normalizeImageUrl } from "@/lib/utils";
+import { useIsClient } from "@/hooks/use-is-client";
 
 export default function ChatRoomPage() {
+  const isClient = useIsClient();
   const { isAuthenticated } = useAuthGuard();
   const params = useParams();
   const router = useRouter();
@@ -106,7 +108,7 @@ export default function ChatRoomPage() {
     }
   };
 
-  if (!isAuthenticated) {
+  if (!isClient || !isAuthenticated) {
     return null; // 리다이렉트 중
   }
 
@@ -233,4 +235,3 @@ function formatTimestamp(timestamp: string): string {
     return "";
   }
 }
-

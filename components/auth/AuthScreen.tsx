@@ -49,6 +49,18 @@ function createNonce(bytes = 24): string {
   return Array.from(buffer, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+function resolveReturnUrl(value?: string | null): string {
+  if (!value) {
+    return "/";
+  }
+  try {
+    const decoded = decodeURIComponent(value);
+    return decoded.startsWith("/") ? decoded : "/";
+  } catch {
+    return "/";
+  }
+}
+
 export default function AuthScreen({
   initialMode = "login",
   returnUrl,
@@ -215,12 +227,20 @@ export default function AuthScreen({
         const loginId = response.id ?? response.userId;
 
         if (response.success && response.memberId && loginId) {
-          // 로그인 응답에 name이 없거나 빈 문자열인 경우 getProfile API 호출
+          let resolvedUser = {
+            id: response.memberId.toString(),
+            userId: loginId,
+            name: response.name ?? "",
+            ci: response.ci,
+            signatureImage: response.signatureImage ?? null,
+            verified: true,
+          };
+
           if (!response.name || response.name.trim() === "") {
             try {
               const profileResponse = await api.members.getProfile(response.memberId);
               if (profileResponse.success && profileResponse.member) {
-                const user = {
+                resolvedUser = {
                   id: String(profileResponse.member.memberId),
                   userId: profileResponse.member.id,
                   name: profileResponse.member.name,
@@ -228,48 +248,14 @@ export default function AuthScreen({
                   signatureImage: profileResponse.member.signatureImage ?? null,
                   verified: true,
                 };
-                setAuth(user, response.token ?? "");
-                router.push(returnUrl || "/");
-              } else {
-                // getProfile 실패 시에도 로그인은 유지하되, name은 빈 문자열로 설정
-                const user = {
-                  id: response.memberId.toString(),
-                  userId: loginId,
-                  name: response.name ?? "",
-                  ci: response.ci,
-                  signatureImage: response.signatureImage ?? null,
-                  verified: true,
-                };
-                setAuth(user, response.token ?? "");
-                router.push(returnUrl || "/");
               }
             } catch (error) {
-              // getProfile API 호출 실패 시에도 로그인은 유지
               console.error("Failed to fetch user profile:", error);
-              const user = {
-                id: response.memberId.toString(),
-                userId: loginId,
-                name: response.name ?? "",
-                ci: response.ci,
-                signatureImage: response.signatureImage ?? null,
-                verified: true,
-              };
-              setAuth(user, response.token ?? "");
-              router.push(returnUrl || "/");
             }
-          } else {
-            // 로그인 응답에 name이 있는 경우 바로 사용
-            const user = {
-              id: response.memberId.toString(),
-              userId: loginId,
-              name: response.name,
-              ci: response.ci,
-              signatureImage: response.signatureImage ?? null,
-              verified: true,
-            };
-            setAuth(user, response.token ?? "");
-            router.push(returnUrl || "/");
           }
+
+          await setAuth(resolvedUser, response.token ?? "");
+          router.push(resolveReturnUrl(returnUrl));
         } else {
           setError(response.message || "로그인에 실패했습니다.");
         }
@@ -320,7 +306,7 @@ export default function AuthScreen({
             signatureImage: response.signatureImage ?? null,
             verified: true,
           };
-          setAuth(user, "");
+          await setAuth(user, "");
           setSignupData({
             userId: "",
             password: "",
@@ -328,7 +314,7 @@ export default function AuthScreen({
             name: "",
             signatureImage: null,
           });
-          router.push(returnUrl || "/");
+          router.push(resolveReturnUrl(returnUrl));
         } else {
           setError(
             `${response.message || "회원가입에 실패했습니다."} 본인인증 토큰은 재사용할 수 없습니다. 다시 인증해주세요.`

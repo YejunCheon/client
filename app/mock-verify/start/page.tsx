@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { config } from "@/lib/config";
 import { issueMockVerifyToken } from "@/mocks/verify-tokens";
+import { useIsClient } from "@/hooks/use-is-client";
 
 function createMockCi(residentNumber: string): string {
   const digits = residentNumber.replace(/[^0-9]/g, "");
@@ -19,6 +20,7 @@ function createMockCi(residentNumber: string): string {
 }
 
 export default function MockVerifyStartPage() {
+  const isClient = useIsClient();
   const searchParams = useSearchParams();
   const redirectUri = searchParams.get("redirect_uri");
   const state = searchParams.get("state");
@@ -80,6 +82,10 @@ export default function MockVerifyStartPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center bg-slate-50 px-6 py-12">

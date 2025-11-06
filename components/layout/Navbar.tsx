@@ -24,7 +24,12 @@ function IconSearch({ className }: { className?: string }) {
 }
 
 export default function Navbar() {
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, status, logout } = useAuthStore((state) => ({
+    user: state.user,
+    status: state.status,
+    logout: state.logout,
+  }));
+  const shouldShowUser = !!user && status !== "unauthenticated";
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -67,9 +72,9 @@ export default function Navbar() {
           </nav>
           
           {/* 인증 상태에 따른 UI */}
-          {isAuthenticated && user ? (
+          {shouldShowUser ? (
             <div className="flex items-center gap-4 ml-4 pl-4 border-l border-[#e0e0e0]">
-              <span className="text-[16px] font-medium text-[#222]">{user.name}님</span>
+              <span className="text-[16px] font-medium text-[#222]">{user?.name}님</span>
               <Button
                 variant="outline"
                 size="sm"
@@ -95,9 +100,9 @@ export default function Navbar() {
         
         {/* 모바일 인증 상태 */}
         <div className="flex md:hidden items-center gap-3 order-4">
-          {isAuthenticated && user ? (
+          {shouldShowUser ? (
             <>
-              <span className="text-[14px] font-medium text-[#222]">{user.name}님</span>
+              <span className="text-[14px] font-medium text-[#222]">{user?.name}님</span>
               <Button
                 variant="outline"
                 size="sm"
