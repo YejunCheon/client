@@ -102,15 +102,6 @@ export function createMockMembersApi(): MembersApi {
         });
       }
 
-      const requestedName = payload.name?.trim();
-
-      if (requestedName && requestedName !== verifiedName) {
-        return respond({
-          success: false,
-          message: '본인인증 결과와 입력하신 이름이 일치하지 않습니다.',
-        });
-      }
-
       const existingCi = mockMembers.some((member) => member.ci === ci);
 
       if (existingCi) {
