@@ -82,13 +82,13 @@ async function resolveChatPreview(room: {
           console.warn(`[resolveChatPreview] Failed to fetch product ${numericProductId}:`, error);
           return {
             success: false,
-            product: undefined,
-          } as ProductResponse;
+            product: null,
+          } as unknown as ProductResponse;
         })
       : Promise.resolve({
           success: false,
-          product: undefined,
-        } as ProductResponse),
+          product: null,
+        } as unknown as ProductResponse),
     api.chat.getMessages({
       roomId: room.roomId,
       user: viewerId,

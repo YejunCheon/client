@@ -184,7 +184,7 @@ export function useChat(userId: string | null) {
                   ? {
                       ...room,
                       lastMessage: message.content || message.message || room.lastMessage,
-                      lastMessageTime: message.timestamp || room.lastMessageTime,
+                      lastMessageTime: String(message.timestamp || room.lastMessageTime || ''),
                     }
                   : room
               ),

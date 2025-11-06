@@ -51,8 +51,8 @@ type UseContractsOptions = Omit<
 export function useContracts(options?: UseContractsOptions) {
   const { params, viewerKey, ...queryOptions } = options ?? {};
 
-  return useQuery<ContractListResponse, Error>({
-    queryKey: ['contracts', params, viewerKey ?? null],
+  return useQuery({
+    queryKey: ['contracts', params, viewerKey ?? null] as const,
     queryFn: () => fetchContracts(params),
     retry: false,
     refetchOnWindowFocus: false,
