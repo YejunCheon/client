@@ -1,24 +1,29 @@
 'use client';
 
 import { PropsWithChildren, useEffect, useState } from 'react';
-import { apiMode } from '@/lib/api';
-
-const shouldUseMock = apiMode === 'mock';
+import { useMockApi } from '@/lib/api';
 
 export function MSWProvider({ children }: PropsWithChildren) {
-  const [mswReady, setMswReady] = useState(false);
+  const isMockMode = useMockApi();
+  const [mswReady, setMswReady] = useState(!isMockMode);
 
   useEffect(() => {
     async function setupMsw() {
-      if (!shouldUseMock) {
+      if (!isMockMode) {
         setMswReady(true);
         return;
       }
 
-      if (process.env.NODE_ENV === 'development') {
+      try {
         const { worker } = await import('@/mocks/browser');
-        await worker.start();
+        await worker.start({
+          onUnhandledRequest: 'bypass', // MSW에서 처리하지 않는 요청은 그대로 통과
+        });
+        console.log('[MSW] Mock Service Worker started');
         setMswReady(true);
+      } catch (error) {
+        console.error('[MSW] Failed to start Mock Service Worker:', error);
+        setMswReady(true); // 에러가 나도 앱은 로드되도록
       }
     }
 
@@ -27,9 +32,11 @@ export function MSWProvider({ children }: PropsWithChildren) {
     }
   }, [mswReady]);
 
-  if (!shouldUseMock || process.env.NODE_ENV !== 'development') {
+  // Mock 모드가 아니면 바로 렌더링
+  if (!isMockMode) {
     return <>{children}</>;
   }
 
+  // Mock 모드인 경우 MSW가 준비될 때까지 대기
   return mswReady ? <>{children}</> : null;
 }

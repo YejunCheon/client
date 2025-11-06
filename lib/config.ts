@@ -10,6 +10,7 @@ const getApiUrl = () => {
 };
 
 export const config = {
+  apiMode: (process.env.NEXT_PUBLIC_API_MODE || 'http') as 'mock' | 'http',
   apiUrl: getApiUrl(),
   wsUrl: process.env.NEXT_PUBLIC_WS_URL || '',
   environment: process.env.NEXT_PUBLIC_ENV || 'development',

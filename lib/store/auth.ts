@@ -203,7 +203,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           token: null,
           status: 'unauthenticated',
           isInitialized: true,
-          lastError: response.message ?? '인증 정보가 유효하지 않습니다.',
+          // lastError: response.message ?? '인증 정보가 유효하지 않습니다.',
         });
       } catch (error) {
         if (isAxiosError(error) && error.response?.status === 401) {
