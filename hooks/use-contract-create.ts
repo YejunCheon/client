@@ -186,24 +186,40 @@ export function useContractCreate() {
     setError(null);
     try {
       // 1단계: 계약서 초안 생성
-      console.log('1단계: 계약서 초안 생성 시작');
+      console.log('[createContractDraft] 1단계: 계약서 초안 생성 시작', { request });
       const createResponse = await api.contracts.create({
         ...request,
         roomId: request.roomId ?? '',
       });
 
+      console.log('[createContractDraft] 1단계 응답:', {
+        isSuccess: createResponse.isSuccess,
+        hasContractResponseDto: !!createResponse.contractResponseDto,
+        hasContract: !!createResponse.contractResponseDto?.contract,
+      });
+
       if (!createResponse.isSuccess) {
-        throw new Error('계약서 생성에 실패했습니다.');
+        const errorMsg = '계약서 생성에 실패했습니다.';
+        console.error('[createContractDraft] 1단계 실패:', {
+          response: createResponse,
+          request,
+        });
+        throw new Error(errorMsg);
       }
 
       // 계약서 데이터 로드
       if (createResponse.contractResponseDto?.contract) {
+        console.log('[createContractDraft] 계약서 데이터 로드 시작');
         loadAIGeneratedContract(createResponse.contractResponseDto.contract);
-        console.log('계약서 데이터 로드 완료');
+        console.log('[createContractDraft] 계약서 데이터 로드 완료');
+      } else {
+        console.warn('[createContractDraft] contractResponseDto 또는 contract가 없습니다:', {
+          contractResponseDto: createResponse.contractResponseDto,
+        });
       }
 
       // 2단계: 요약 생성
-      console.log('2단계: 요약 생성 시작');
+      console.log('[createContractDraft] 2단계: 요약 생성 시작');
       const summaryResponse = await api.contracts.getSummary({
         sellerId: request.sellerId,
         buyerId: request.buyerId,
@@ -211,16 +227,44 @@ export function useContractCreate() {
         deviceInfo: request.deviceInfo,
       });
 
-      if (summaryResponse.isSuccess && summaryResponse.summary) {
-        setSummary(summaryResponse.summary);
-        console.log('요약 생성 완료');
+      console.log('[createContractDraft] 2단계 응답:', {
+        isSuccess: summaryResponse.isSuccess,
+        hasSummary: !!summaryResponse.summary,
+        hasFinalSummary: !!summaryResponse.summary?.final_summary,
+        summaryLength: summaryResponse.summary?.final_summary?.length,
+      });
+
+      if (summaryResponse.isSuccess && summaryResponse.summary?.final_summary) {
+        setSummary(summaryResponse.summary.final_summary);
+        console.log('[createContractDraft] 요약 생성 완료');
+      } else {
+        console.warn('[createContractDraft] 요약 생성 실패 또는 요약이 없습니다:', {
+          isSuccess: summaryResponse.isSuccess,
+          summary: summaryResponse.summary,
+        });
       }
 
-      console.log('계약서 생성 완료:', { request, createResponse, summaryResponse });
+      console.log('[createContractDraft] 계약서 생성 완료:', {
+        request,
+        createResponse: {
+          isSuccess: createResponse.isSuccess,
+          hasContract: !!createResponse.contractResponseDto?.contract,
+        },
+        summaryResponse: {
+          isSuccess: summaryResponse.isSuccess,
+          hasSummary: !!summaryResponse.summary?.final_summary,
+        },
+      });
 
       return createResponse;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '계약서 생성에 실패했습니다.';
+      console.error('[createContractDraft] 에러 발생:', {
+        error: err,
+        errorMessage,
+        request,
+        stack: err instanceof Error ? err.stack : undefined,
+      });
       setError(errorMessage);
       throw err;
     } finally {

@@ -300,7 +300,9 @@ export function createMockContractsApi(): ContractsApi {
       if (!contract) {
         return respond({
           isSuccess: false,
-          summary: '',
+          summary: {
+            final_summary: '',
+          },
           data: '계약서를 찾을 수 없습니다.',
         });
       }
@@ -311,11 +313,13 @@ export function createMockContractsApi(): ContractsApi {
         buyerId: payload.buyerId,
       });
 
-      const summary = `${contractData.item_details.name} 거래 계약서입니다. 매매금액은 ${contractData.payment.price}이며, ${contractData.delivery.method}로 ${contractData.delivery.schedule} 거래됩니다. 반품 및 교환은 계약내용과 일치하는 한 불가능합니다.`;
+      const final_summary = `${contractData.item_details.name} 거래 계약서입니다. 매매금액은 ${contractData.payment.price}이며, ${contractData.delivery.method}로 ${contractData.delivery.schedule} 거래됩니다. 반품 및 교환은 계약내용과 일치하는 한 불가능합니다.`;
 
       return respond({
         isSuccess: true,
-        summary,
+        summary: {
+          final_summary,
+        },
         data: 'AI가 요약을 생성했습니다.',
       });
     },
@@ -379,7 +383,7 @@ export function createMockContractsApi(): ContractsApi {
         other_terms: '기타 특별한 약정사항을 명시하여 계약의 완전성을 확보합니다.',
       };
 
-      const summary = `${contractData.item_details.name} 거래 계약서입니다. 매매금액은 ${contractData.payment.price}이며, ${contractData.delivery.method}로 ${contractData.delivery.schedule} 거래됩니다. 반품 및 교환은 계약내용과 일치하는 한 불가능합니다.`;
+      const final_summary = `${contractData.item_details.name} 거래 계약서입니다. 매매금액은 ${contractData.payment.price}이며, ${contractData.delivery.method}로 ${contractData.delivery.schedule} 거래됩니다. 반품 및 교환은 계약내용과 일치하는 한 불가능합니다.`;
 
       const evidence = `본 계약서는 매도인과 매수인 간의 합의에 따라 작성되었으며, 다음과 같은 법적 근거를 따릅니다:\n\n1. 민법 제563조 - 매도인의 하자담보책임\n2. 전자상거래 등에서의 소비자보호에 관한 법률 제17조 - 청약철회\n3. 민법 제544조 - 계약해제의 효과\n\n이 계약서는 양 당사자의 서명으로 법적 효력이 발생합니다.`;
 
@@ -387,7 +391,9 @@ export function createMockContractsApi(): ContractsApi {
         isSuccess: true,
         contractResponseDto: { contract: contractData },
         rationaleResponseDto: { rational: rationale },
-        summary,
+        summary: {
+          final_summary,
+        },
         evidence,
       });
     },

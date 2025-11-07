@@ -55,8 +55,8 @@ export function useBuyerContractSign() {
         }
 
         // 요약 정보 설정
-        if (response.summary) {
-          setSummary(response.summary);
+        if (response.summary?.final_summary) {
+          setSummary(response.summary.final_summary);
         }
 
         // 근거 정보 설정

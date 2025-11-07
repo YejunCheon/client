@@ -82,7 +82,9 @@ export interface ContractSummaryRequest {
 
 export interface ContractSummaryResponse {
   isSuccess: boolean;
-  summary: string;
+  summary: {
+    final_summary: string;
+  };
   data?: string;
 }
 
@@ -326,7 +328,9 @@ export interface BuyerContractDetailResponse {
   isSuccess: boolean;
   contractResponseDto: ContractResponseDto;
   rationaleResponseDto: RationaleResponseDto;
-  summary?: string;
+  summary?: {
+    final_summary: string;
+  };
   evidence?: string;
   message?: string;
 }

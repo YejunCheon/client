@@ -211,6 +211,49 @@ function buildContractUploadFormData(payload: ContractUploadPayload): FormData {
   return formData;
 }
 
+// 서버 응답의 success를 isSuccess로 정규화
+function normalizeCreateResponse(
+  raw: ContractCreateResponse & { success?: boolean }
+): ContractCreateResponse {
+  console.log('[contractsApi.create] Raw response:', JSON.stringify(raw, null, 2));
+  
+  const normalized: ContractCreateResponse = {
+    isSuccess: raw.isSuccess ?? raw.success ?? false,
+    contractResponseDto: raw.contractResponseDto,
+    data: raw.data,
+  };
+
+  console.log('[contractsApi.create] Normalized response:', JSON.stringify(normalized, null, 2));
+  
+  return normalized;
+}
+
+function normalizeSummaryResponse(
+  raw: ContractSummaryResponse & { success?: boolean; summary?: string | { final_summary: string } }
+): ContractSummaryResponse {
+  console.log('[contractsApi.getSummary] Raw response:', JSON.stringify(raw, null, 2));
+  
+  // summary가 문자열인 경우 (하위 호환성) 또는 객체인 경우 처리
+  let normalizedSummary: { final_summary: string };
+  if (typeof raw.summary === 'string') {
+    normalizedSummary = { final_summary: raw.summary };
+  } else if (raw.summary?.final_summary) {
+    normalizedSummary = raw.summary;
+  } else {
+    normalizedSummary = { final_summary: '' };
+  }
+  
+  const normalized: ContractSummaryResponse = {
+    isSuccess: raw.isSuccess ?? raw.success ?? false,
+    summary: normalizedSummary,
+    data: raw.data,
+  };
+
+  console.log('[contractsApi.getSummary] Normalized response:', JSON.stringify(normalized, null, 2));
+  
+  return normalized;
+}
+
 export function createContractsApi(
   client: AuthHttpClient = defaultClient
 ): ContractsApi {
@@ -223,11 +266,11 @@ export function createContractsApi(
       return normalizeContractListResponse(response);
     },
 
-    create(payload) {
-      return client.post<ContractCreateResponse>(
-        '/api/contracts/create',
-        buildCreatePayload(payload)
-      );
+    async create(payload) {
+      const rawResponse = await client.post<
+        ContractCreateResponse & { success?: boolean }
+      >('/api/contracts/create', buildCreatePayload(payload));
+      return normalizeCreateResponse(rawResponse);
     },
 
     sign(payload) {
@@ -299,11 +342,11 @@ export function createContractsApi(
     },
 
     // Seller separated flow
-    getSummary(payload) {
-      return client.post<ContractSummaryResponse>(
-        '/api/contracts/summary',
-        buildSearchLikePayload(payload)
-      );
+    async getSummary(payload) {
+      const rawResponse = await client.post<
+        ContractSummaryResponse & { success?: boolean }
+      >('/api/contracts/summary', buildSearchLikePayload(payload));
+      return normalizeSummaryResponse(rawResponse);
     },
 
     getReason(payload) {

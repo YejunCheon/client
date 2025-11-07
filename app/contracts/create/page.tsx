@@ -115,20 +115,45 @@ export default function ContractCreatePage() {
       const urlParams = new URLSearchParams(window.location.search);
       const buyerId = urlParams.get('buyerId') || '';
       const roomId = urlParams.get('roomId') || '';
+      const productId = urlParams.get('productId') || '';
 
       if (!buyerId || !roomId) {
         alert('필수 파라미터가 없습니다.');
         return;
       }
 
-      // 계약서 전달 API 호출
       const { api } = await import('@/lib/api');
-      await api.contracts.send({
+
+      // 1단계: 계약서 DB 업데이트
+      await api.contracts.edit({
+        roomId,
+        contract: formData,
+        deviceInfo: navigator.userAgent,
+      });
+
+      // 2단계: 판매자 서명 등록
+      const signResponse = await api.contracts.sign({
+        roomId,
+        productId: productId || user?.id || '',
+        deviceInfo: navigator.userAgent,
+        contract: formData,
+      });
+
+      if (!signResponse.isSuccess) {
+        throw new Error(signResponse.message || '판매자 서명 등록에 실패했습니다.');
+      }
+
+      // 3단계: 매수자에게 계약서 전달 및 상태 변경
+      const sendResponse = await api.contracts.send({
         sellerId: user?.id ?? '',
         buyerId,
         roomId,
         deviceInfo: navigator.userAgent,
       });
+
+      if (!sendResponse.isSuccess) {
+        throw new Error(sendResponse.message || '계약서 전달에 실패했습니다.');
+      }
 
       alert('매수자에게 계약서가 전달되었습니다.');
       // 성공 시 리다이렉트 또는 모달 표시
