@@ -36,6 +36,10 @@ import type { ContractsApi } from './types';
 type RawContractListItem = Partial<ContractListItem> & {
   contractId?: EntityId;
   id?: EntityId;
+  contractDataId?: EntityId;
+  // API 응답에 sellerId/buyerId가 없을 수 있으므로 추가 필드 지원
+  seller?: EntityId;
+  buyer?: EntityId;
 };
 
 type RawContractListResponse =
@@ -110,41 +114,46 @@ function buildEditPayload(payload: ContractEditRequest) {
 
 function normalizeStatus(status: unknown): ContractStatus {
   if (!status) {
-    return ContractStatus.DRAFT;
+    return ContractStatus.PENDING_BOTH;
   }
 
-  const value = String(status).toLowerCase();
+  const raw = String(status).trim().toUpperCase();
+  const normalized = raw.replace(/[\s-]/g, '_');
 
-  switch (value) {
-    case 'seller_review':
-    case 'seller-review':
-    case 'sellerreview':
-      return ContractStatus.SELLER_REVIEW;
-    case 'buyer_review':
-    case 'buyer-review':
-    case 'buyerreview':
-      return ContractStatus.BUYER_REVIEW;
-    case 'signed':
-    case 'completed':
-    case 'complete':
-      return ContractStatus.SIGNED;
-    case 'void':
-    case 'cancelled':
-    case 'canceled':
-      return ContractStatus.VOID;
-    case 'draft':
+  switch (normalized) {
+    case 'PENDING_BOTH':
+    case 'DRAFT':
+      return ContractStatus.PENDING_BOTH;
+    case 'PENDING_SELLER':
+    case 'SELLER_REVIEW':
+    case 'SELLERREVIEW':
+      return ContractStatus.PENDING_SELLER;
+    case 'PENDING_BUYER':
+    case 'BUYER_REVIEW':
+    case 'BUYERREVIEW':
+      return ContractStatus.PENDING_BUYER;
+    case 'COMPLETED':
+    case 'SIGNED':
+    case 'COMPLETE':
+      return ContractStatus.COMPLETED;
     default:
-      return ContractStatus.DRAFT;
+      return ContractStatus.PENDING_BOTH;
   }
 }
 
 function normalizeContractListItem(item: RawContractListItem): ContractListItem {
-  const resolvedId = item.contractId ?? item.id ?? '';
+  // contractDataId가 있으면 그것을 id로 사용
+  const resolvedId = item.contractId ?? item.contractDataId ?? item.id ?? '';
 
-  const sellerId = item.sellerId ?? (item as { seller?: EntityId }).seller ?? '';
-  const buyerId = item.buyerId ?? (item as { buyer?: EntityId }).buyer ?? '';
+  // 다양한 필드명 시도 (하위 호환성)
+  const sellerId = item.sellerId 
+    ?? item.seller
+    ?? '';
+  const buyerId = item.buyerId 
+    ?? item.buyer
+    ?? '';
 
-  return {
+  const normalized: ContractListItem = {
     id: resolvedId,
     contractId: resolvedId,
     roomId: item.roomId ?? (item as { room?: string }).room,
@@ -158,6 +167,18 @@ function normalizeContractListItem(item: RawContractListItem): ContractListItem 
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
   };
+
+  // 디버깅: sellerId/buyerId가 없으면 경고
+  if (!sellerId && !buyerId) {
+    console.warn('[normalizeContractListItem] Missing sellerId and buyerId:', {
+      rawItem: item,
+      normalized,
+      contractDataId: item.contractDataId,
+      suggestion: 'API response may need additional fields or contract detail lookup via roomId or contractDataId',
+    });
+  }
+
+  return normalized;
 }
 
 function normalizeContractListResponse(raw: RawContractListResponse): ContractListResponse {

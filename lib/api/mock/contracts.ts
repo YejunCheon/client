@@ -149,7 +149,7 @@ export function createMockContractsApi(): ContractsApi {
         buyerId: payload.buyerId,
         productId: undefined,
         summary: `Room ${payload.roomId} 계약 초안`,
-        status: ContractStatus.DRAFT,
+        status: ContractStatus.PENDING_BOTH,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -169,7 +169,7 @@ export function createMockContractsApi(): ContractsApi {
         mockContracts.find((item) => item.productId === payload.productId);
 
       if (contract) {
-        updateContractStatus(contract.contractId ?? contract.id, ContractStatus.SIGNED);
+        updateContractStatus(contract.contractId ?? contract.id, ContractStatus.COMPLETED);
       }
 
       return respond({
@@ -200,7 +200,7 @@ export function createMockContractsApi(): ContractsApi {
     async reject(payload: ContractRejectRequest): Promise<ContractSendResponse> {
       const contract = findContractByRoom(payload.roomId);
       if (contract) {
-        updateContractStatus(contract.contractId ?? contract.id, ContractStatus.VOID);
+        updateContractStatus(contract.contractId ?? contract.id, ContractStatus.PENDING_BOTH);
       }
 
       return respond({
@@ -229,7 +229,7 @@ export function createMockContractsApi(): ContractsApi {
       if (contract) {
         updateContractStatus(
           contract.contractId ?? contract.id,
-          ContractStatus.SELLER_REVIEW
+          ContractStatus.PENDING_BUYER
         );
       }
 
@@ -408,7 +408,7 @@ export function createMockContractsApi(): ContractsApi {
         });
       }
 
-      updateContractStatus(contract.contractId ?? contract.id, ContractStatus.SIGNED);
+      updateContractStatus(contract.contractId ?? contract.id, ContractStatus.COMPLETED);
 
       return respond({
         isSuccess: true,
@@ -429,6 +429,7 @@ export function createMockContractsApi(): ContractsApi {
 
       contract.summary = `${contract.summary} [수정요청: ${payload.reason}]`;
       contract.updatedAt = new Date().toISOString();
+      updateContractStatus(contract.contractId ?? contract.id, ContractStatus.PENDING_SELLER);
 
       return respond({
         isSuccess: true,

@@ -12,7 +12,26 @@ async function fetchContracts(
   params?: FetchContractsParams
 ): Promise<ContractListResponse> {
   try {
-    return await api.contracts.list(params);
+    const response = await api.contracts.list(params);
+
+    if (process.env.NODE_ENV !== 'production') {
+      const contractsForLog =
+        response.contracts?.map((contract) => ({
+          id: contract.id,
+          roomId: contract.roomId,
+          sellerId: contract.sellerId,
+          buyerId: contract.buyerId,
+          status: contract.status,
+          updatedAt: contract.updatedAt,
+        })) ?? [];
+
+      console.groupCollapsed('[useContracts] fetchContracts');
+      console.log('params:', params);
+      console.table(contractsForLog);
+      console.groupEnd();
+    }
+
+    return response;
   } catch (error) {
     if (isAxiosError(error)) {
       const status = error.response?.status;

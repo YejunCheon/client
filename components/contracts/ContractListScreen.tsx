@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useContracts } from '@/hooks/useContracts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,45 +29,37 @@ const STATUS_CONFIG: Record<
     description: string;
   }
 > = {
-  [ContractStatus.DRAFT]: {
-    label: '작성 중',
+  [ContractStatus.PENDING_BOTH]: {
+    label: '양측 서명 대기',
     badgeClassName: 'bg-blue-50 text-blue-600 border border-blue-100',
     dotClassName: 'bg-blue-500',
-    description: 'AI가 생성한 초안을 검토하고 필요한 내용을 채워 넣어 주세요.',
+    description: '아직 양측 모두 서명을 완료하지 않았습니다. 계약 내용을 먼저 확인해 주세요.',
   },
-  [ContractStatus.SELLER_REVIEW]: {
-    label: '내가 검토 중',
+  [ContractStatus.PENDING_SELLER]: {
+    label: '판매자 서명 대기',
     badgeClassName: 'bg-amber-50 text-amber-600 border border-amber-100',
     dotClassName: 'bg-amber-500',
-    description: '내가 계약 조건을 확인하고 있어요. 필요한 수정이 있다면 바로 반영해 보세요.',
+    description: '구매자는 서명을 마쳤어요. 판매자가 서명하면 계약이 완료됩니다.',
   },
-  [ContractStatus.BUYER_REVIEW]: {
-    label: '상대방이 검토 중',
+  [ContractStatus.PENDING_BUYER]: {
+    label: '구매자 서명 대기',
     badgeClassName: 'bg-violet-50 text-violet-600 border border-violet-100',
     dotClassName: 'bg-violet-500',
-    description: '상대방이 계약서를 검토하고 있어요. 진행 상황을 채팅으로 확인해 보세요.',
+    description: '판매자는 서명을 마쳤어요. 구매자의 확인과 서명을 기다리고 있습니다.',
   },
-  [ContractStatus.SIGNED]: {
+  [ContractStatus.COMPLETED]: {
     label: '서명 완료',
     badgeClassName: 'bg-emerald-50 text-emerald-600 border border-emerald-100',
     dotClassName: 'bg-emerald-500',
     description: '양측 서명이 완료되었습니다. 계약서를 보관하고 거래를 마무리하세요.',
   },
-  [ContractStatus.VOID]: {
-    label: '무효',
-    badgeClassName: 'bg-slate-100 text-slate-500 border border-slate-200',
-    dotClassName: 'bg-slate-400',
-    description:
-      '취소된 계약입니다. 동일한 조건으로 새로운 계약서를 작성할 수 있습니다.',
-  },
 };
 
 const STATUS_ORDER: ContractStatus[] = [
-  ContractStatus.DRAFT,
-  ContractStatus.SELLER_REVIEW,
-  ContractStatus.BUYER_REVIEW,
-  ContractStatus.SIGNED,
-  ContractStatus.VOID,
+  ContractStatus.PENDING_BOTH,
+  ContractStatus.PENDING_SELLER,
+  ContractStatus.PENDING_BUYER,
+  ContractStatus.COMPLETED,
 ];
 
 const FILTER_OPTIONS: Array<{ value: StatusFilter; label: string }> = [
@@ -121,24 +113,115 @@ const ContractListScreen = ({ viewerId }: ContractListScreenProps) => {
 
   const contracts = data?.contracts ?? [];
 
+  useEffect(() => {
+    console.log('[ContractListScreen] Data state:', {
+      viewerId,
+      hasData: !!data,
+      success: data?.success,
+      contractsCount: contracts.length,
+      isLoading,
+      isFetching,
+      error: error?.message,
+      rawContracts: contracts,
+    });
+  }, [data, contracts, isLoading, isFetching, error, viewerId]);
+
   const viewerContracts = useMemo<ContractListItem[]>(() => {
     const allContracts = contracts;
     if (!viewerId) {
+      console.log('[ContractListScreen] No viewerId, returning empty array');
       return [];
     }
     const viewerKey = String(viewerId);
-    return allContracts.filter((contract) => {
+    
+    console.log('[ContractListScreen] Filtering contracts:', {
+      totalContracts: allContracts.length,
+      viewerId,
+      viewerKey,
+      contracts: allContracts.map((c) => ({
+        id: c.id,
+        sellerId: c.sellerId,
+        buyerId: c.buyerId,
+        sellerName: c.sellerName,
+        buyerName: c.buyerName,
+        status: c.status,
+      })),
+    });
+    
+    // 디버깅: 필터링 전 모든 계약서를 보여주는 옵션 (개발 환경에서만)
+    const DEBUG_SHOW_ALL = process.env.NODE_ENV !== 'production' && 
+      typeof window !== 'undefined' && 
+      window.localStorage.getItem('DEBUG_SHOW_ALL_CONTRACTS') === 'true';
+    
+    if (DEBUG_SHOW_ALL) {
+      console.warn('[ContractListScreen] DEBUG MODE: Showing all contracts without filtering');
+      return allContracts;
+    }
+    
+    const filtered = allContracts.filter((contract) => {
+      // sellerId/buyerId가 없으면 roomId로 필터링 시도 (임시 해결책)
+      // 실제로는 API에서 sellerId/buyerId를 제공해야 함
+      const hasParticipantIds = contract.sellerId || contract.buyerId;
+      
+      if (!hasParticipantIds) {
+        // sellerId/buyerId가 없으면 일단 모든 계약서를 보여줌 (임시)
+        // TODO: roomId를 사용해서 채팅방 정보를 가져와서 sellerId/buyerId를 확인해야 함
+        console.warn('[ContractListScreen] Contract missing sellerId/buyerId, showing anyway:', {
+          contractId: contract.id,
+          roomId: contract.roomId,
+        });
+        return true; // 임시로 모든 계약서 표시
+      }
+      
       const participants = [
         contract.sellerId,
         contract.buyerId,
         contract.sellerName,
         contract.buyerName,
       ];
-      return participants.some((value) => {
+      const matches = participants.some((value) => {
         if (value == null) return false;
-        return String(value) === viewerKey;
+        const normalizedValue = String(value);
+        const matches = normalizedValue === viewerKey;
+        if (matches) {
+          console.log('[ContractListScreen] Match found:', {
+            contractId: contract.id,
+            participant: normalizedValue,
+            viewerKey,
+          });
+        }
+        return matches;
       });
+      return matches;
     });
+    
+    console.log('[ContractListScreen] Filtered contracts:', {
+      count: filtered.length,
+      contracts: filtered.map((c) => ({
+        id: c.id,
+        sellerId: c.sellerId,
+        buyerId: c.buyerId,
+        status: c.status,
+      })),
+    });
+    
+    // 필터링 결과가 없고 원본 데이터가 있으면 경고
+    if (filtered.length === 0 && allContracts.length > 0) {
+      console.warn('[ContractListScreen] No contracts matched viewerId:', {
+        viewerId,
+        viewerKey,
+        allContracts: allContracts.map((c) => ({
+          id: c.id,
+          sellerId: String(c.sellerId),
+          buyerId: String(c.buyerId),
+          sellerIdType: typeof c.sellerId,
+          buyerIdType: typeof c.buyerId,
+        })),
+        suggestion: 'Check if viewerId matches sellerId or buyerId. You can enable DEBUG_SHOW_ALL_CONTRACTS in localStorage to see all contracts.',
+      });
+    }
+    
+    return filtered;
   }, [contracts, viewerId]);
 
   const totalCount = viewerContracts.length;
@@ -207,13 +290,51 @@ const ContractListScreen = ({ viewerId }: ContractListScreenProps) => {
     });
   }, [viewerContracts, searchTerm, selectedStatus]);
 
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') {
+      return;
+    }
+
+    const contractsForLog = viewerContracts.map((contract) => ({
+      id: contract.id,
+      roomId: contract.roomId,
+      status: contract.status,
+      sellerId: contract.sellerId,
+      buyerId: contract.buyerId,
+      updatedAt: contract.updatedAt,
+    }));
+
+    console.groupCollapsed('[ContractListScreen] viewerContracts snapshot');
+    console.log('selectedStatus:', selectedStatus, 'searchTerm:', searchTerm);
+    console.table(contractsForLog);
+    console.log('statusCounts:', statusCounts);
+    console.log('filteredContracts:', filteredContracts.map((c) => c.id));
+    console.groupEnd();
+  }, [viewerContracts, statusCounts, filteredContracts, selectedStatus, searchTerm]);
+
   const isFiltering =
     selectedStatus !== 'all' || searchTerm.trim().length > 0 || false;
   const showEmptyState =
     !isLoading &&
+    !isFetching &&
     !error &&
     filteredContracts.length === 0 &&
     viewerContracts.length > 0;
+  
+  useEffect(() => {
+    console.log('[ContractListScreen] Render conditions:', {
+      isLoading,
+      isFetching,
+      hasError: !!error,
+      filteredCount: filteredContracts.length,
+      viewerCount: viewerContracts.length,
+      totalCount,
+      showEmptyState,
+      isFiltering,
+      selectedStatus,
+      searchTerm,
+    });
+  }, [isLoading, isFetching, error, filteredContracts.length, viewerContracts.length, totalCount, showEmptyState, isFiltering, selectedStatus, searchTerm]);
 
   const formatLastUpdated = (value?: Date | string | null) => {
     if (!value) {

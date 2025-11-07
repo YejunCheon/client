@@ -255,12 +255,12 @@ export type ContractDetailResponse =
 
 // ===== 상태/리스트 모델 =====
 
+// Mirrors server-side SignStatus enum so contract list filters stay in sync.
 export enum ContractStatus {
-  DRAFT = 'draft',
-  SELLER_REVIEW = 'seller_review',
-  BUYER_REVIEW = 'buyer_review',
-  SIGNED = 'signed',
-  VOID = 'void',
+  PENDING_BOTH = 'PENDING_BOTH',
+  PENDING_BUYER = 'PENDING_BUYER',
+  PENDING_SELLER = 'PENDING_SELLER',
+  COMPLETED = 'COMPLETED',
 }
 
 export interface ContractListItem {
