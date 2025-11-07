@@ -180,44 +180,45 @@ export function useContractCreate() {
     }
   }, []);
 
-  // 검증 없이 계약서 생성 (페이지 로드 시 사용)
+  // 검증 없이 계약서 생성 (페이지 로드 시 사용) - 분리된 API 사용
   const createContractDraft = useCallback(async (request: CreateContractRequest) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.contracts.create({
+      // 1단계: 계약서 초안 생성
+      console.log('1단계: 계약서 초안 생성 시작');
+      const createResponse = await api.contracts.create({
         ...request,
         roomId: request.roomId ?? '',
       });
 
-      // 새로운 API 응답 구조 처리
-      if (response && 'isSuccess' in response && response.isSuccess) {
-        // contractResponseDto 처리
-        if (response.contractResponseDto?.contract) {
-          loadAIGeneratedContract(response.contractResponseDto.contract);
-        }
-
-        // summary 처리
-        if (response.summary) {
-          setSummary(response.summary);
-        }
-
-        // rationaleResponseDto 처리
-        if (response.rationaleResponseDto?.rational) {
-          setRationale(response.rationaleResponseDto.rational);
-        }
-      }
-      // 하위 호환성: 기존 API 응답 구조 처리
-      else if (response && 'isSuccess' in response && response.isSuccess && typeof response.data === 'object') {
-        loadAIGeneratedContractLegacy(response.data as ContractDataLegacy);
-        if ('summary' in response && typeof response.summary === 'string') {
-          setSummary(response.summary);
-        }
+      if (!createResponse.isSuccess) {
+        throw new Error('계약서 생성에 실패했습니다.');
       }
 
-      console.log('계약서 생성:', { request, response });
+      // 계약서 데이터 로드
+      if (createResponse.contractResponseDto?.contract) {
+        loadAIGeneratedContract(createResponse.contractResponseDto.contract);
+        console.log('계약서 데이터 로드 완료');
+      }
 
-      return response;
+      // 2단계: 요약 생성
+      console.log('2단계: 요약 생성 시작');
+      const summaryResponse = await api.contracts.getSummary({
+        sellerId: request.sellerId,
+        buyerId: request.buyerId,
+        roomId: request.roomId ?? '',
+        deviceInfo: request.deviceInfo,
+      });
+
+      if (summaryResponse.isSuccess && summaryResponse.summary) {
+        setSummary(summaryResponse.summary);
+        console.log('요약 생성 완료');
+      }
+
+      console.log('계약서 생성 완료:', { request, createResponse, summaryResponse });
+
+      return createResponse;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '계약서 생성에 실패했습니다.';
       setError(errorMessage);
@@ -225,8 +226,10 @@ export function useContractCreate() {
     } finally {
       setLoading(false);
     }
-  }, [loadAIGeneratedContract, loadAIGeneratedContractLegacy]);
+  }, [loadAIGeneratedContract]);
 
+  // submitContract는 더 이상 사용하지 않음 (createContractDraft + send 사용)
+  // 하위 호환성을 위해 유지
   const submitContract = useCallback(async (request: CreateContractRequest) => {
     const validationError = validateForm();
     if (validationError) {
@@ -234,59 +237,9 @@ export function useContractCreate() {
       throw new Error(validationError);
     }
 
-    setLoading(true);
-    setError(null);
-    try {
-      // 계약서 데이터 구성
-      const contractData = {
-        ...formData,
-        summary,
-      };
-
-      const response = await api.contracts.create({
-        ...request,
-        roomId: request.roomId ?? '',
-      });
-
-      // 새로운 API 응답 구조 처리
-      if (response && 'isSuccess' in response && response.isSuccess) {
-        // contractResponseDto 처리
-        if (response.contractResponseDto?.contract) {
-          loadAIGeneratedContract(response.contractResponseDto.contract);
-        }
-
-        // summary 처리
-        if (response.summary) {
-          setSummary(response.summary);
-        }
-
-        // rationaleResponseDto 처리
-        if (response.rationaleResponseDto?.rational) {
-          setRationale(response.rationaleResponseDto.rational);
-        }
-      }
-      // 하위 호환성: 기존 API 응답 구조 처리
-      else if (response && 'isSuccess' in response && response.isSuccess && typeof response.data === 'object') {
-        loadAIGeneratedContractLegacy(response.data as ContractDataLegacy);
-        if ('summary' in response && typeof response.summary === 'string') {
-          setSummary(response.summary);
-        }
-      }
-
-      console.log('계약서 제출:', { contractData, request, response });
-
-      // 성공 시 로컬 스토리지 초기화
-      localStorage.removeItem('contract_draft');
-
-      return response;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '계약서 제출에 실패했습니다.';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [formData, summary, validateForm, loadAIGeneratedContract, loadAIGeneratedContractLegacy]);
+    console.warn('submitContract는 deprecated되었습니다. createContractDraft와 send를 사용하세요.');
+    return createContractDraft(request);
+  }, [validateForm, createContractDraft]);
 
   return {
     formData,

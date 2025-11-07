@@ -26,6 +26,10 @@ import type {
   BuyerContractAcceptResponse,
   BuyerContractRejectRequest,
   BuyerContractRejectResponse,
+  ContractSummaryRequest,
+  ContractSummaryResponse,
+  ContractReasonRequest,
+  ContractReasonResponse,
 } from '@/types/contract';
 import type { ContractsApi } from '../types';
 import { generateId, respond } from './utils';
@@ -135,7 +139,7 @@ export function createMockContractsApi(): ContractsApi {
 
     async create(payload: ContractCreateRequest): Promise<ContractCreateResponse> {
       const contractId = generateId('contract');
-      const data = createAiContractData(payload);
+      const contractData = createAiContractData(payload);
 
       const newContract: ContractListItem = {
         id: contractId,
@@ -154,9 +158,8 @@ export function createMockContractsApi(): ContractsApi {
 
       return respond({
         isSuccess: true,
-        data,
-        summary: '생성된 계약서 요약입니다.',
-        message: 'AI 계약서가 생성되었습니다.',
+        contractResponseDto: { contract: contractData },
+        data: 'AI 계약서가 생성되었습니다.',
       });
     },
 
@@ -287,6 +290,62 @@ export function createMockContractsApi(): ContractsApi {
         success: true,
         message: '계약서가 삭제되었습니다.',
         contractId: removed.contractId ?? removed.id,
+      });
+    },
+
+    // Seller separated flow
+    async getSummary(payload: ContractSummaryRequest): Promise<ContractSummaryResponse> {
+      const contract = findContractByRoom(payload.roomId);
+
+      if (!contract) {
+        return respond({
+          isSuccess: false,
+          summary: '',
+          data: '계약서를 찾을 수 없습니다.',
+        });
+      }
+
+      const contractData = createAiContractData({
+        roomId: payload.roomId,
+        sellerId: payload.sellerId,
+        buyerId: payload.buyerId,
+      });
+
+      const summary = `${contractData.item_details.name} 거래 계약서입니다. 매매금액은 ${contractData.payment.price}이며, ${contractData.delivery.method}로 ${contractData.delivery.schedule} 거래됩니다. 반품 및 교환은 계약내용과 일치하는 한 불가능합니다.`;
+
+      return respond({
+        isSuccess: true,
+        summary,
+        data: 'AI가 요약을 생성했습니다.',
+      });
+    },
+
+    async getReason(payload: ContractReasonRequest): Promise<ContractReasonResponse> {
+      const contract = findContractByRoom(payload.roomId);
+
+      if (!contract) {
+        return respond({
+          isSuccess: false,
+          rationaleResponseDto: { rational: {} },
+          data: '계약서를 찾을 수 없습니다.',
+        });
+      }
+
+      const rationale = {
+        item_details: '정확한 모델명과 상태를 기재하여 거래 품목을 명확히 식별하고 향후 분쟁을 예방합니다.',
+        payment: '매매금액, 지불 방법, 시기를 명확히 하여 거래의 투명성을 보장합니다.',
+        delivery: '거래 방법과 시기를 구체적으로 명시하여 분쟁을 예방합니다.',
+        cancellation_policy: '계약 미이행 시 책임과 보상 방법을 명확히 규정하여 법적 분쟁을 최소화합니다.',
+        escrow: '청약철회 및 계약해제 조건을 명확히 하여 소비자 권익을 보호합니다.',
+        refund_policy: '반품 및 교환 정책을 명시하여 향후 분쟁을 방지합니다.',
+        dispute_resolution: '분쟁 발생 시 해결 절차를 명시하여 신속한 해결을 도모합니다.',
+        other_terms: '기타 특별한 약정사항을 명시하여 계약의 완전성을 확보합니다.',
+      };
+
+      return respond({
+        isSuccess: true,
+        rationaleResponseDto: { rational: rationale },
+        data: 'AI가 법적 근거를 생성했습니다.',
       });
     },
 

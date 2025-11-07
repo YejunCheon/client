@@ -37,6 +37,10 @@ import type {
   BuyerContractAcceptResponse,
   BuyerContractRejectRequest,
   BuyerContractRejectResponse,
+  ContractSummaryRequest,
+  ContractSummaryResponse,
+  ContractReasonRequest,
+  ContractReasonResponse,
 } from '@/types/contract';
 import type {
   ChatMessagesRequest,
@@ -75,6 +79,10 @@ export interface ContractsApi {
   detail(params: ContractDetailParams): Promise<ContractDetailResponse>;
   upload?(payload: ContractUploadPayload): Promise<ContractUploadResponse>;
   delete(contractId: number | string): Promise<ContractDeleteResponse>;
+
+  // Seller separated flow
+  getSummary(payload: ContractSummaryRequest): Promise<ContractSummaryResponse>;
+  getReason(payload: ContractReasonRequest): Promise<ContractReasonResponse>;
 
   // Buyer signing flow
   buyerDetail(payload: BuyerContractDetailRequest): Promise<BuyerContractDetailResponse>;

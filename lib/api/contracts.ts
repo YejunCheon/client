@@ -24,6 +24,10 @@ import {
   BuyerContractAcceptResponse,
   BuyerContractRejectRequest,
   BuyerContractRejectResponse,
+  ContractSummaryRequest,
+  ContractSummaryResponse,
+  ContractReasonRequest,
+  ContractReasonResponse,
 } from '@/types/contract';
 import type { AuthHttpClient } from './http-client';
 import { httpClient as defaultClient } from './http-client';
@@ -87,12 +91,13 @@ function buildSignPayload(payload: ContractSignRequest) {
 }
 
 function buildSearchLikePayload(
-  payload: ContractSearchRequest | ContractRejectRequest | ContractSendRequest
+  payload: ContractSearchRequest | ContractRejectRequest | ContractSendRequest | ContractSummaryRequest | ContractReasonRequest
 ) {
   return {
-    ...payload,
+    roomId: payload.roomId,
     sellerId: toNumericId(payload.sellerId),
     buyerId: toNumericId(payload.buyerId),
+    deviceInfo: payload.deviceInfo,
   };
 }
 
@@ -290,6 +295,21 @@ export function createContractsApi(
     delete(contractId) {
       return client.delete<ContractDeleteResponse>(
         `/api/contracts/${contractId}`
+      );
+    },
+
+    // Seller separated flow
+    getSummary(payload) {
+      return client.post<ContractSummaryResponse>(
+        '/api/contracts/summary',
+        buildSearchLikePayload(payload)
+      );
+    },
+
+    getReason(payload) {
+      return client.post<ContractReasonResponse>(
+        '/api/contracts/reason',
+        buildSearchLikePayload(payload)
       );
     },
 

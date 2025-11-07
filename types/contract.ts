@@ -66,7 +66,41 @@ export interface RationaleResponseDto {
   rational: ContractRationale;
 }
 
+// 새로운 분리된 API 응답 구조
 export interface ContractCreateResponse {
+  isSuccess: boolean;
+  contractResponseDto: ContractResponseDto;
+  data?: string;
+}
+
+export interface ContractSummaryRequest {
+  sellerId: EntityId;
+  buyerId: EntityId;
+  roomId: string;
+  deviceInfo?: string;
+}
+
+export interface ContractSummaryResponse {
+  isSuccess: boolean;
+  summary: string;
+  data?: string;
+}
+
+export interface ContractReasonRequest {
+  sellerId: EntityId;
+  buyerId: EntityId;
+  roomId: string;
+  deviceInfo?: string;
+}
+
+export interface ContractReasonResponse {
+  isSuccess: boolean;
+  rationaleResponseDto: RationaleResponseDto;
+  data?: string;
+}
+
+// 하위 호환성을 위한 통합 응답 타입 (기존 코드용)
+export interface ContractCreateResponseLegacyV2 {
   isSuccess: boolean;
   contractResponseDto: ContractResponseDto;
   rationaleResponseDto: RationaleResponseDto;
