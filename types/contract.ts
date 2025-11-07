@@ -279,3 +279,46 @@ export interface ContractResponse {
   contract?: ContractSummary;
   message?: string;
 }
+
+// ===== 구매자 서명 관련 =====
+
+export interface BuyerContractDetailRequest {
+  roomId: string;
+  buyerId: EntityId;
+  deviceInfo?: string;
+}
+
+export interface BuyerContractDetailResponse {
+  isSuccess: boolean;
+  contractResponseDto: ContractResponseDto;
+  rationaleResponseDto: RationaleResponseDto;
+  summary?: string;
+  evidence?: string;
+  message?: string;
+}
+
+export interface BuyerContractAcceptRequest {
+  roomId: string;
+  buyerId: EntityId;
+  deviceInfo?: string;
+  signatureImage?: string;
+}
+
+export interface BuyerContractAcceptResponse {
+  isSuccess: boolean;
+  data?: string | Record<string, unknown>;
+  message?: string;
+}
+
+export interface BuyerContractRejectRequest {
+  roomId: string;
+  buyerId: EntityId;
+  reason: string;
+  deviceInfo?: string;
+}
+
+export interface BuyerContractRejectResponse {
+  isSuccess: boolean;
+  data?: string | Record<string, unknown>;
+  message?: string;
+}

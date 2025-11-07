@@ -18,6 +18,12 @@ import {
   ContractUploadPayload,
   ContractUploadResponse,
   EntityId,
+  BuyerContractDetailRequest,
+  BuyerContractDetailResponse,
+  BuyerContractAcceptRequest,
+  BuyerContractAcceptResponse,
+  BuyerContractRejectRequest,
+  BuyerContractRejectResponse,
 } from '@/types/contract';
 import type { AuthHttpClient } from './http-client';
 import { httpClient as defaultClient } from './http-client';
@@ -284,6 +290,31 @@ export function createContractsApi(
     delete(contractId) {
       return client.delete<ContractDeleteResponse>(
         `/api/contracts/${contractId}`
+      );
+    },
+
+    // Buyer signing flow
+    buyerDetail(payload) {
+      return client.post<BuyerContractDetailResponse>(
+        '/api/contracts/buyer/detail',
+        payload,
+        buildHeaders(payload.deviceInfo)
+      );
+    },
+
+    buyerAccept(payload) {
+      return client.post<BuyerContractAcceptResponse>(
+        '/api/contracts/buyer/accept',
+        payload,
+        buildHeaders(payload.deviceInfo)
+      );
+    },
+
+    buyerReject(payload) {
+      return client.post<BuyerContractRejectResponse>(
+        '/api/contracts/buyer/reject',
+        payload,
+        buildHeaders(payload.deviceInfo)
       );
     },
   };
