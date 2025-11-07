@@ -186,6 +186,8 @@ export function useChatPreviews(userId: string | null) {
     },
     enabled: Boolean(userId),
     staleTime: 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   // chatRoomsQuery.data가 배열인지 확인
@@ -207,6 +209,8 @@ export function useChatPreviews(userId: string | null) {
     },
     enabled: Boolean(userId) && rooms.length > 0,
     staleTime: 30 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   const previews = useMemo(

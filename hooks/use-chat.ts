@@ -83,6 +83,8 @@ export function useChat(userId: string | null) {
     },
     enabled: !!userId,
     staleTime: 30000, // 30초 캐시
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   const loadInitialMessages = useCallback(
@@ -305,22 +307,25 @@ export function useChat(userId: string | null) {
     [currentRoomId, wsStatus, subscribeToRoom, unsubscribeFromRoom, loadInitialMessages]
   );
 
-  // 현재 방이 변경되면 자동 구독
+  // 현재 방이 변경되면 자동 구독 및 초기 메시지 로드
   useEffect(() => {
-    if (currentRoomId && wsStatus === 'connected') {
+    if (!currentRoomId) return;
+
+    // WebSocket이 연결되어 있으면 구독
+    if (wsStatus === 'connected') {
       subscribeToRoom(currentRoomId);
     }
 
-    if (currentRoomId && userId) {
+    // 초기 메시지 로드 (userId가 있을 때만)
+    if (userId) {
       void loadInitialMessages(currentRoomId);
     }
 
     return () => {
-      if (currentRoomId) {
-        unsubscribeFromRoom(currentRoomId);
-      }
+      unsubscribeFromRoom(currentRoomId);
     };
-  }, [currentRoomId, wsStatus, subscribeToRoom, unsubscribeFromRoom, userId, loadInitialMessages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentRoomId, wsStatus, userId]);
 
   // WebSocket 연결 시 현재 방 구독
   useEffect(() => {

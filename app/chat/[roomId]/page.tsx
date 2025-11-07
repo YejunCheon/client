@@ -136,8 +136,9 @@ export default function ChatRoomPage() {
     }
   };
 
-  if (!isClient || !isAuthenticated) {
-    return null; // 리다이렉트 중
+  // 클라이언트 사이드 렌더링 대기 또는 인증 확인 중
+  if (!isClient || !isAuthenticated || !user?.id) {
+    return null;
   }
 
   const product = productData?.product;

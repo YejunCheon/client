@@ -23,7 +23,7 @@ export default function ChatsPage() {
   const isClient = useIsClient();
   const { isAuthenticated } = useAuthGuard();
   const { user } = useAuthStore();
-  const viewerId = user?.id ?? null;
+  const viewerId = user?.id?.toString() ?? null;
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterId>(filters[0].id);
 
@@ -64,8 +64,9 @@ export default function ChatsPage() {
   const activeCount = filteredChats.length;
   const totalCount = previews.length;
 
-  if (!isClient || !isAuthenticated) {
-    return null; // 리다이렉트 중
+  // 클라이언트 사이드 렌더링 대기 또는 인증 확인 중
+  if (!isClient || !isAuthenticated || !viewerId) {
+    return null;
   }
 
   return (
