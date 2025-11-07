@@ -60,8 +60,10 @@ class AxiosHttpClient implements AuthHttpClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error: AxiosError) => {
-        if (error.response?.status === 401) {
-          const url = error.config?.url ?? '';
+        const status = error.response?.status;
+        const url = error.config?.url ?? '';
+        
+        if (status === 401) {
           const shouldSkip =
             url.includes('/auth') ||
             url.includes('/login') ||
@@ -70,7 +72,36 @@ class AxiosHttpClient implements AuthHttpClient {
           if (!shouldSkip) {
             this.handleUnauthorized('세션이 만료되었습니다. 다시 로그인해주세요.');
           }
+        } else if (status === 403) {
+          // 403 Forbidden: 권한이 없는 경우
+          const errorData = error.response?.data;
+          const errorMessage = 
+            (typeof errorData === 'object' && errorData !== null && 'message' in errorData)
+              ? (errorData as { message?: string }).message
+              : typeof errorData === 'string'
+              ? errorData
+              : '해당 리소스에 접근할 권한이 없습니다.';
+          
+          console.error('[HTTP Client] 403 Forbidden:', {
+            url,
+            method: error.config?.method,
+            message: errorMessage,
+            data: errorData,
+            requestData: error.config?.data,
+          });
+          
+          // 특정 API는 조용히 처리 (예: 계약서 상세 조회 등)
+          // 이 경우 호출하는 쪽에서 에러를 처리하도록 함
+          const shouldSilentFail = 
+            url.includes('/contracts/detail') ||
+            url.includes('/contracts/search') ||
+            url.includes('/contracts/edit');
+          
+          if (!shouldSilentFail && typeof window !== 'undefined') {
+            alert(errorMessage);
+          }
         }
+        
         return Promise.reject(error);
       }
     );

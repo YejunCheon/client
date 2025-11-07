@@ -1,10 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useProductsList } from "@/hooks/use-products";
 import { normalizeImageUrl } from "@/lib/utils";
 import type { Product, ProductListResponse } from "@/types";
+import { cn } from "@/lib/utils";
+
+type SortOption = "latest" | "priceLow" | "priceHigh";
 
 const img5 = "/assets/7aa7c9611c3f8ff422da5e3f2517977e63048d54.png";
 const imgVectorStroke = "/assets/c76b9efec1aaf6868b3f07b078748d9f98bef3d9.svg";
@@ -68,6 +71,32 @@ function ProductCard({ product }: { product: Product }) {
 
 export default function ProductListScreen() {
   const { data: productsData, isLoading, isError } = useProductsList<ProductListResponse>();
+  const [sortOption, setSortOption] = useState<SortOption>("latest");
+
+  // 정렬된 상품 목록
+  const sortedProducts = useMemo(() => {
+    if (!productsData?.products) return [];
+
+    const products = [...productsData.products];
+
+    switch (sortOption) {
+      case "priceLow":
+        return products.sort((a, b) => {
+          const priceA = Number(a.price) || 0;
+          const priceB = Number(b.price) || 0;
+          return priceA - priceB;
+        });
+      case "priceHigh":
+        return products.sort((a, b) => {
+          const priceA = Number(a.price) || 0;
+          const priceB = Number(b.price) || 0;
+          return priceB - priceA;
+        });
+      case "latest":
+      default:
+        return products; // API에서 받은 순서 그대로 (최신순)
+    }
+  }, [productsData?.products, sortOption]);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -81,28 +110,53 @@ export default function ProductListScreen() {
     <div className="w-full py-10" data-name="상품 목록 페이지">
       <div className="box-border content-stretch flex flex-col gap-[26px] items-center px-[15px] py-0 w-full" data-node-id="103:723">
         <div className="content-stretch flex items-center justify-between leading-[0] relative shrink-0 w-full" data-name="검색 결과 및 필터" data-node-id="55:580">
-          <div className="grid-cols-[max-content] grid-rows-[max-content] inline-grid leading-[26px] not-italic place-items-start relative shrink-0 text-[18px] whitespace-pre" data-node-id="55:433">
-            <p className="[grid-area:1_/_1] font-['Inter:Bold','Noto_Sans_KR:Bold',sans-serif] font-bold ml-0 mt-0 relative text-[#2487f8]" data-node-id="55:429">
-              전체 상품
-            </p>
-            <p className="[grid-area:1_/_1] font-['Inter:Regular','Noto_Sans_KR:Regular',sans-serif] font-normal ml-[130px] mt-0 relative text-[color:var(--black,#222222)]" data-node-id="55:432">
-              목록
-            </p>
-            <p className="[grid-area:1_/_1] font-['Inter:Regular','Noto_Sans_KR:Regular',sans-serif] font-normal ml-[210px] mt-0 relative text-[color:var(--darkgrey,#767676)]" data-node-id="55:579">
-              {productsData?.products?.length ?? 0}건
-            </p>
+          <div className="flex items-center gap-1 text-[18px] leading-[26px]" data-node-id="55:433">
+            <span className="font-bold text-[#2487f8]">전체 상품</span>
+            <span className="font-normal text-[#222222]">목록</span>
+            <span className="font-normal text-[#767676]">{sortedProducts.length}건</span>
           </div>
-          <div className="grid-cols-[max-content] grid-rows-[max-content] inline-grid place-items-start relative shrink-0" data-node-id="55:574">
-            <div className="[grid-area:1_/_1] box-border content-stretch flex gap-[11px] items-center leading-[26px] ml-0 mt-0 not-italic relative text-[18px] text-nowrap whitespace-pre" data-node-id="55:578">
-              <p className="font-['Inter:Bold','Noto_Sans_KR:Bold',sans-serif] font-bold relative shrink-0 text-[#2487f8]" data-node-id="55:575">최신순</p>
-              <p className="font-['Inter:Regular','Noto_Sans_KR:Regular',sans-serif] font-normal relative shrink-0 text-[color:var(--black,#222222)]" data-node-id="55:576">저가순</p>
-              <p className="font-['Inter:Regular','Noto_Sans_KR:Regular',sans-serif] font-normal relative shrink-0 text-[color:var(--black,#222222)]" data-node-id="55:577">고가순</p>
-            </div>
+          <div className="flex gap-[11px] items-center text-[18px] leading-[26px]" data-node-id="55:574">
+            <button
+              type="button"
+              onClick={() => setSortOption("latest")}
+              className={cn(
+                "relative shrink-0 transition-colors",
+                sortOption === "latest"
+                  ? "font-bold text-[#2487f8]"
+                  : "font-normal text-[#222222] hover:text-[#2487f8]"
+              )}
+            >
+              최신순
+            </button>
+            <button
+              type="button"
+              onClick={() => setSortOption("priceLow")}
+              className={cn(
+                "relative shrink-0 transition-colors",
+                sortOption === "priceLow"
+                  ? "font-bold text-[#2487f8]"
+                  : "font-normal text-[#222222] hover:text-[#2487f8]"
+              )}
+            >
+              저가순
+            </button>
+            <button
+              type="button"
+              onClick={() => setSortOption("priceHigh")}
+              className={cn(
+                "relative shrink-0 transition-colors",
+                sortOption === "priceHigh"
+                  ? "font-bold text-[#2487f8]"
+                  : "font-normal text-[#222222] hover:text-[#2487f8]"
+              )}
+            >
+              고가순
+            </button>
           </div>
         </div>
 
         <div className="grid grid-cols-4 gap-[26px]">
-          {productsData?.products.map((product) => (
+          {sortedProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>

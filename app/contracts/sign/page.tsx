@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import { ContractPreviewSection } from '@/components/contract/ContractPreviewSection';
 import { ContractSummarySection } from '@/components/contract/ContractSummarySection';
-import { ContractEvidenceSection } from '@/components/contract/ContractEvidenceSection';
 import { ContractSignSection } from '@/components/contract/ContractSignSection';
 import { RejectReasonDialog } from '@/components/contract/RejectReasonDialog';
 import { Button } from '@/components/ui/button';
@@ -22,7 +21,6 @@ export default function BuyerContractSignPage() {
   const {
     formData,
     summary,
-    evidence,
     signatureImage,
     loading,
     error,
@@ -49,21 +47,23 @@ export default function BuyerContractSignPage() {
         setIsInitialLoading(true);
         const urlParams = new URLSearchParams(window.location.search);
         const roomIdParam = urlParams.get('roomId') || '';
+        const sellerIdParam = urlParams.get('sellerId') || '';
 
-        if (!roomIdParam) {
-          console.error('필수 파라미터가 없습니다: roomId');
-          alert('잘못된 접근입니다. roomId가 필요합니다.');
+        if (!roomIdParam || !sellerIdParam) {
+          console.error('필수 파라미터가 없습니다:', { roomId: roomIdParam, sellerId: sellerIdParam });
+          alert('잘못된 접근입니다. roomId와 sellerId가 필요합니다.');
           setIsInitialLoading(false);
           return;
         }
 
         setRoomId(roomIdParam);
 
-        console.log('계약서 상세 정보 조회 시작:', { buyerId: user.id, roomId: roomIdParam });
+        console.log('계약서 상세 정보 조회 시작:', { buyerId: user.id, sellerId: sellerIdParam, roomId: roomIdParam });
 
-        // 계약서 상세 정보 가져오기
+        // 계약서 상세 정보 가져오기 (/search API 사용)
         await fetchContractDetail({
           buyerId: user.id,
+          sellerId: sellerIdParam,
           roomId: roomIdParam,
           deviceInfo: navigator.userAgent,
         });
@@ -179,19 +179,16 @@ export default function BuyerContractSignPage() {
           <div className="flex-shrink-0 w-[706px]">
             <ContractPreviewSection
               contractData={formData}
-              // onChange를 전달하지 않아 읽기 전용으로 동작
               isAIGenerated={true}
+              readOnly={true}
               rationale={rationale || undefined}
             />
           </div>
 
-          {/* Right: Summary, Evidence, and Sign */}
+          {/* Right: Summary and Sign */}
           <div className="flex-shrink-0 w-[706px] flex flex-col gap-[58px]">
             {/* Summary Section */}
             <ContractSummarySection summary={summary} isLoading={loading} />
-
-            {/* Evidence Section */}
-            <ContractEvidenceSection evidence={evidence} isLoading={loading} />
 
             {/* Sign Section */}
             <ContractSignSection
@@ -202,12 +199,12 @@ export default function BuyerContractSignPage() {
             />
 
             {/* Action Buttons */}
-            <div className="flex gap-[19px] items-center">
+            <div className="flex gap-[19px] items-center justify-end">
               <Button
                 variant="outline"
                 onClick={handleReject}
                 disabled={loading}
-                className="border-[#e74c3c] text-[#e74c3c] hover:bg-[#e74c3c] hover:text-white rounded-[15px] px-5 py-[11px] text-[18px] font-bold flex items-center gap-2"
+                className="bg-[#767676] text-white hover:bg-[#666666] rounded-[15px] px-5 py-[11px] text-[18px] font-bold flex items-center gap-2"
               >
                 <X className="w-6 h-6" />
                 수정 요청
@@ -215,7 +212,7 @@ export default function BuyerContractSignPage() {
               <Button
                 onClick={handleAccept}
                 disabled={loading || !signatureImage}
-                className="bg-[#27ae60] text-white hover:bg-[#229954] rounded-[15px] px-5 py-[11px] text-[18px] font-bold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-[#2487f8] text-white hover:bg-[#1e6fc9] rounded-[15px] px-5 py-[11px] text-[18px] font-bold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Check className="w-6 h-6" />
                 계약 체결

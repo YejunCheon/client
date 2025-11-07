@@ -3,10 +3,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useContracts } from '@/hooks/useContracts';
+import { useChat } from '@/hooks/use-chat';
+import { useProduct } from '@/hooks/use-products';
+import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ContractListItem, ContractStatus } from '@/types/contract';
+import type { ChatRoom } from '@/types/chat';
 import {
   AlertTriangle,
   Clock,
@@ -91,6 +95,141 @@ const formatParticipant = (
   return '정보 없음';
 };
 
+// 계약서 카드 컴포넌트 (Hook 사용을 위해 분리)
+interface ContractCardProps {
+  contract: ContractListItem;
+  statusMeta: {
+    label: string;
+    badgeClassName: string;
+    dotClassName: string;
+    description: string;
+  };
+  formatContractId: (id: string | number) => string;
+  formatParticipant: (name?: string | null, identifier?: string | number | null) => string;
+  formatLastUpdated: (value?: Date | string | null) => string;
+  getContractDetailUrl: (contract: ContractListItem) => string | null;
+  handleDownloadPdf: (contract: ContractListItem) => Promise<void>;
+}
+
+const ContractCard = ({
+  contract,
+  statusMeta,
+  formatContractId,
+  formatParticipant,
+  formatLastUpdated,
+  getContractDetailUrl,
+  handleDownloadPdf,
+}: ContractCardProps) => {
+  const productId = typeof contract.productId === 'number' ? contract.productId : 
+                   typeof contract.productId === 'string' ? Number(contract.productId) : null;
+  const { data: productData } = useProduct(productId, {
+    enabled: !!productId && !isNaN(Number(productId)),
+  });
+
+  return (
+    <Card className="group border border-slate-200 bg-white/90 shadow-md transition-all hover:-translate-y-1 hover:shadow-xl">
+      <CardHeader className="space-y-5 pb-0">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              #{formatContractId(contract.id)}
+            </span>
+            <span
+              className={cn(
+                'inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold',
+                statusMeta.badgeClassName
+              )}
+            >
+              <span
+                className={cn(
+                  'h-1.5 w-1.5 rounded-full',
+                  statusMeta.dotClassName
+                )}
+              />
+              {statusMeta.label}
+            </span>
+          </div>
+        </div>
+        <CardTitle className="text-xl font-semibold text-[#222]">
+          {contract.summary || productData?.product?.productName || '계약서'}
+        </CardTitle>
+        {productData?.product && (
+          <p className="text-sm text-[#767676]">
+            {productData.product.productName}
+          </p>
+        )}
+        <p className="text-sm text-[#767676]">
+          {statusMeta.description}
+        </p>
+      </CardHeader>
+      <CardContent className="mt-6 flex flex-col gap-6">
+        <div className="grid grid-cols-1 gap-4 text-sm text-[#555] sm:grid-cols-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              판매자
+            </p>
+            <p className="mt-1 text-sm font-medium text-[#222]">
+              {formatParticipant(contract.sellerName, contract.sellerId)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              매수자
+            </p>
+            <p className="mt-1 text-sm font-medium text-[#222]">
+              {formatParticipant(contract.buyerName, contract.buyerId)}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <span className="flex flex-col gap-1 text-xs font-medium text-slate-500">
+            <span className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-slate-400" />
+              마지막 업데이트
+            </span>
+            <span className="pl-6 text-[11px] text-slate-400">
+              {formatLastUpdated(contract.updatedAt)}
+            </span>
+          </span>
+          <div className="flex flex-wrap items-center gap-2 sm:ml-auto sm:justify-end">
+            {contract.roomId ? (
+              <Link
+                href={`/chat/${contract.roomId}`}
+                className="inline-flex items-center gap-2 rounded-full border border-[#2487f8]/40 px-4 py-2 text-xs font-semibold text-[#2487f8] transition hover:border-[#2487f8] hover:bg-[#2487f8]/5"
+              >
+                <MessageCircle className="h-4 w-4" />
+                채팅 내역
+              </Link>
+            ) : null}
+            {contract.status === ContractStatus.COMPLETED ? (
+              <button
+                onClick={() => handleDownloadPdf(contract)}
+                className="inline-flex items-center gap-2 rounded-full bg-[#2487f8] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#1e6fd8]"
+              >
+                <FileSignature className="h-4 w-4" />
+                PDF 다운로드
+              </button>
+            ) : getContractDetailUrl(contract) ? (
+              <Link
+                href={getContractDetailUrl(contract)!}
+                className="inline-flex items-center gap-2 rounded-full bg-[#2487f8] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#1e6fd8]"
+              >
+                <FileSignature className="h-4 w-4" />
+                상세 보기
+              </Link>
+            ) : (
+              <span className="inline-flex items-center gap-2 rounded-full bg-slate-200 px-4 py-2 text-xs font-semibold text-slate-500 cursor-not-allowed">
+                <FileSignature className="h-4 w-4" />
+                접근 불가
+              </span>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 
 interface ContractListScreenProps {
   viewerId: string | null;
@@ -113,6 +252,18 @@ const ContractListScreen = ({ viewerId }: ContractListScreenProps) => {
 
   const contracts = data?.contracts ?? [];
 
+  // 채팅방 정보 가져오기 (sellerId, buyerId, productId 보강용)
+  const { chatRooms } = useChat(viewerId);
+  
+  // 채팅방 정보를 roomId로 매핑
+  const roomInfoMap = useMemo(() => {
+    const map = new Map<string, ChatRoom>();
+    chatRooms.forEach((room) => {
+      map.set(room.roomId, room);
+    });
+    return map;
+  }, [chatRooms]);
+
   useEffect(() => {
     console.log('[ContractListScreen] Data state:', {
       viewerId,
@@ -134,16 +285,32 @@ const ContractListScreen = ({ viewerId }: ContractListScreenProps) => {
     }
     const viewerKey = String(viewerId);
     
+    // 채팅방 정보로 계약서 정보 보강
+    const enrichedContracts = allContracts.map((contract) => {
+      // roomId가 있고 채팅방 정보가 있으면 정보 보강
+      if (contract.roomId && roomInfoMap.has(contract.roomId)) {
+        const roomInfo = roomInfoMap.get(contract.roomId)!;
+        return {
+          ...contract,
+          sellerId: contract.sellerId || roomInfo.sellerId,
+          buyerId: contract.buyerId || roomInfo.buyerId,
+          productId: contract.productId || roomInfo.productId,
+          updatedAt: contract.updatedAt || roomInfo.updatedAt,
+        };
+      }
+      return contract;
+    });
+    
     console.log('[ContractListScreen] Filtering contracts:', {
-      totalContracts: allContracts.length,
+      totalContracts: enrichedContracts.length,
       viewerId,
       viewerKey,
-      contracts: allContracts.map((c) => ({
+      contracts: enrichedContracts.map((c) => ({
         id: c.id,
         sellerId: c.sellerId,
         buyerId: c.buyerId,
-        sellerName: c.sellerName,
-        buyerName: c.buyerName,
+        productId: c.productId,
+        roomId: c.roomId,
         status: c.status,
       })),
     });
@@ -155,24 +322,10 @@ const ContractListScreen = ({ viewerId }: ContractListScreenProps) => {
     
     if (DEBUG_SHOW_ALL) {
       console.warn('[ContractListScreen] DEBUG MODE: Showing all contracts without filtering');
-      return allContracts;
+      return enrichedContracts;
     }
     
-    const filtered = allContracts.filter((contract) => {
-      // sellerId/buyerId가 없으면 roomId로 필터링 시도 (임시 해결책)
-      // 실제로는 API에서 sellerId/buyerId를 제공해야 함
-      const hasParticipantIds = contract.sellerId || contract.buyerId;
-      
-      if (!hasParticipantIds) {
-        // sellerId/buyerId가 없으면 일단 모든 계약서를 보여줌 (임시)
-        // TODO: roomId를 사용해서 채팅방 정보를 가져와서 sellerId/buyerId를 확인해야 함
-        console.warn('[ContractListScreen] Contract missing sellerId/buyerId, showing anyway:', {
-          contractId: contract.id,
-          roomId: contract.roomId,
-        });
-        return true; // 임시로 모든 계약서 표시
-      }
-      
+    const filtered = enrichedContracts.filter((contract) => {
       const participants = [
         contract.sellerId,
         contract.buyerId,
@@ -201,28 +354,13 @@ const ContractListScreen = ({ viewerId }: ContractListScreenProps) => {
         id: c.id,
         sellerId: c.sellerId,
         buyerId: c.buyerId,
+        productId: c.productId,
         status: c.status,
       })),
     });
     
-    // 필터링 결과가 없고 원본 데이터가 있으면 경고
-    if (filtered.length === 0 && allContracts.length > 0) {
-      console.warn('[ContractListScreen] No contracts matched viewerId:', {
-        viewerId,
-        viewerKey,
-        allContracts: allContracts.map((c) => ({
-          id: c.id,
-          sellerId: String(c.sellerId),
-          buyerId: String(c.buyerId),
-          sellerIdType: typeof c.sellerId,
-          buyerIdType: typeof c.buyerId,
-        })),
-        suggestion: 'Check if viewerId matches sellerId or buyerId. You can enable DEBUG_SHOW_ALL_CONTRACTS in localStorage to see all contracts.',
-      });
-    }
-    
     return filtered;
-  }, [contracts, viewerId]);
+  }, [contracts, viewerId, roomInfoMap]);
 
   const totalCount = viewerContracts.length;
 
@@ -366,6 +504,88 @@ const ContractListScreen = ({ viewerId }: ContractListScreenProps) => {
       return idStr;
     }
     return `${idStr.slice(0, 4)}...${idStr.slice(-4)}`;
+  };
+
+  /**
+   * 계약서 상태와 사용자 역할에 따라 적절한 페이지 URL을 결정합니다.
+   */
+  const getContractDetailUrl = (contract: ContractListItem): string | null => {
+    if (!contract.roomId) {
+      return `/contracts/${contract.id}`;
+    }
+
+    const isSeller = viewerId && contract.sellerId && String(contract.sellerId) === String(viewerId);
+    const isBuyer = viewerId && contract.buyerId && String(contract.buyerId) === String(viewerId);
+
+    switch (contract.status) {
+      case ContractStatus.PENDING_BOTH:
+        // 양측 서명 대기: 판매자만 수정 가능, 구매자는 접근 불가
+        if (isSeller) {
+          return `/contracts/edit?roomId=${contract.roomId}&sellerId=${contract.sellerId}&buyerId=${contract.buyerId}`;
+        }
+        // 구매자는 접근 불가
+        return null;
+
+      case ContractStatus.PENDING_SELLER:
+        // 판매자 서명 대기: 판매자만 수정 가능, 구매자는 접근 불가
+        if (isSeller) {
+          return `/contracts/edit?roomId=${contract.roomId}&sellerId=${contract.sellerId}&buyerId=${contract.buyerId}`;
+        }
+        // 구매자는 접근 불가
+        return null;
+
+      case ContractStatus.PENDING_BUYER:
+        // 구매자 서명 대기: 구매자만 서명/거절 가능, 판매자는 접근 불가
+        if (isBuyer) {
+          return `/contracts/sign?roomId=${contract.roomId}&buyerId=${contract.buyerId}&sellerId=${contract.sellerId}`;
+        }
+        // 판매자는 접근 불가
+        return null;
+
+      case ContractStatus.COMPLETED:
+        // 서명 완료: PDF 다운로드 (URL이 아닌 핸들러로 처리)
+        return null;
+
+      default:
+        return `/contracts/${contract.id}`;
+    }
+  };
+
+  /**
+   * PDF 다운로드 핸들러
+   */
+  const handleDownloadPdf = async (contract: ContractListItem) => {
+    if (!contract.roomId) {
+      console.error('[ContractListScreen] Cannot download PDF: roomId is missing');
+      return;
+    }
+
+    try {
+      const response = await api.contracts.detail({
+        roomId: contract.roomId,
+        responseType: 'pdf',
+      });
+
+      // responseType이 'pdf'일 때는 Blob이 반환됨
+      if (!(response instanceof Blob)) {
+        console.error('[ContractListScreen] Expected Blob but got:', typeof response);
+        alert('PDF 다운로드에 실패했습니다.');
+        return;
+      }
+
+      // Blob을 다운로드 링크로 변환
+      const url = window.URL.createObjectURL(response);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `contract-${contract.roomId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('[ContractListScreen] Failed to download PDF:', error);
+      alert('PDF 다운로드에 실패했습니다.');
+    }
   };
 
   const handleResetFilters = () => {
@@ -568,91 +788,17 @@ const ContractListScreen = ({ viewerId }: ContractListScreenProps) => {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
               {filteredContracts.map((contract: ContractListItem) => {
                 const statusMeta = STATUS_CONFIG[contract.status];
-
                 return (
-                  <Card
+                  <ContractCard
                     key={contract.id}
-                    className="group border border-slate-200 bg-white/90 shadow-md transition-all hover:-translate-y-1 hover:shadow-xl"
-                  >
-                    <CardHeader className="space-y-5 pb-0">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                            #{formatContractId(contract.id)}
-                          </span>
-                          <span
-                            className={cn(
-                              'inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold',
-                              statusMeta.badgeClassName
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                'h-1.5 w-1.5 rounded-full',
-                                statusMeta.dotClassName
-                              )}
-                            />
-                            {statusMeta.label}
-                          </span>
-                        </div>
-                      </div>
-                      <CardTitle className="text-xl font-semibold text-[#222]">
-                        {contract.summary}
-                      </CardTitle>
-                      <p className="text-sm text-[#767676]">
-                        {statusMeta.description}
-                      </p>
-                    </CardHeader>
-                    <CardContent className="mt-6 flex flex-col gap-6">
-                      <div className="grid grid-cols-1 gap-4 text-sm text-[#555] sm:grid-cols-2">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                            판매자
-                          </p>
-                          <p className="mt-1 text-sm font-medium text-[#222]">
-                            {formatParticipant(contract.sellerName, contract.sellerId)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                            매수자
-                          </p>
-                          <p className="mt-1 text-sm font-medium text-[#222]">
-                            {formatParticipant(contract.buyerName, contract.buyerId)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="flex flex-col gap-1 text-xs font-medium text-slate-500">
-                          <span className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-slate-400" />
-                            마지막 업데이트
-                          </span>
-                          <span className="pl-6 text-[11px] text-slate-400">
-                            {formatLastUpdated(contract.updatedAt)}
-                          </span>
-                        </span>
-                        <div className="flex flex-wrap items-center gap-2 sm:ml-auto sm:justify-end">
-                          {contract.roomId ? (
-                            <Link
-                              href={`/chat/${contract.roomId}`}
-                              className="inline-flex items-center gap-2 rounded-full border border-[#2487f8]/40 px-4 py-2 text-xs font-semibold text-[#2487f8] transition hover:border-[#2487f8] hover:bg-[#2487f8]/5"
-                            >
-                              <MessageCircle className="h-4 w-4" />
-                              채팅 내역
-                            </Link>
-                          ) : null}
-                          <Link
-                            href={`/contracts/${contract.id}`}
-                            className="inline-flex items-center gap-2 rounded-full bg-[#2487f8] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#1e6fd8]"
-                          >
-                            <FileSignature className="h-4 w-4" />
-                            상세 보기
-                          </Link>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    contract={contract}
+                    statusMeta={statusMeta}
+                    formatContractId={formatContractId}
+                    formatParticipant={formatParticipant}
+                    formatLastUpdated={formatLastUpdated}
+                    getContractDetailUrl={getContractDetailUrl}
+                    handleDownloadPdf={handleDownloadPdf}
+                  />
                 );
               })}
             </div>

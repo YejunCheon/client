@@ -2,7 +2,34 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+
+const AIBadge = ({ text = "AI가 작성한 초안" }: { text?: string }) => (
+  <div className="backdrop-blur-[5px] bg-[rgba(62,160,254,0.1)] rounded-[12px] px-3 py-[10px] flex items-center gap-2">
+    <div className="w-4 h-4 flex-shrink-0">
+      <svg
+        viewBox="0 0 16 16"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-full h-full"
+      >
+        <path
+          d="M8 0L10.1631 5.83694L16 8L10.1631 10.1631L8 16L5.83694 10.1631L0 8L5.83694 5.83694L8 0Z"
+          fill="url(#starGradient)"
+        />
+        <defs>
+          <linearGradient id="starGradient" x1="0" y1="0" x2="16" y2="0">
+            <stop offset="0%" stopColor="#1778d5" />
+            <stop offset="100%" stopColor="#11497f" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <span className="text-[14px] font-semibold bg-gradient-to-r from-[#1778d5] to-[#11497f] bg-clip-text text-transparent">
+      {text}
+    </span>
+  </div>
+);
 
 interface ContractSummarySectionProps {
   summary?: string;
@@ -27,10 +54,7 @@ export function ContractSummarySection({
         <h2 className="text-[28px] font-bold leading-[36px] text-[#222222]">
           요약
         </h2>
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] rounded-full">
-          <Sparkles className="w-4 h-4 text-white" />
-          <span className="text-xs font-semibold text-white">AI 생성</span>
-        </div>
+        <AIBadge text="AI가 요약했어요" />
       </div>
 
       {/* Content */}

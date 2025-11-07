@@ -138,7 +138,7 @@ export default function ContractCreatePage() {
         roomId,
         productId: productId || user?.id || '',
         deviceInfo: navigator.userAgent,
-        contract: formData,
+        contract: formData as any,
       });
 
       if (!signResponse.isSuccess) {
