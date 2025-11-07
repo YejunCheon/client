@@ -220,9 +220,11 @@ export interface ContractRejectRequest {
 }
 
 export interface ContractEditRequest {
+  sellerId: EntityId;
+  buyerId: EntityId;
   roomId: string;
-  contract: string | Record<string, unknown>;
   deviceInfo?: string;
+  editjson: string;
 }
 
 export interface ContractSendRequest {

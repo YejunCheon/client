@@ -126,9 +126,11 @@ export default function ContractCreatePage() {
 
       // 1단계: 계약서 DB 업데이트
       await api.contracts.edit({
+        sellerId: user?.id ?? '',
+        buyerId,
         roomId,
-        contract: formData,
         deviceInfo: navigator.userAgent,
+        editjson: JSON.stringify(formData),
       });
 
       // 2단계: 판매자 서명 등록

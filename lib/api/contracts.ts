@@ -63,7 +63,7 @@ function toNumericId(value: string | number | undefined): string | number | unde
 }
 
 function stringifyContract(
-  contract: ContractSignRequest['contract'] | ContractEditRequest['contract']
+  contract: ContractSignRequest['contract']
 ): string | undefined {
   if (contract == null) {
     return undefined;
@@ -107,8 +107,11 @@ function buildSearchLikePayload(
 
 function buildEditPayload(payload: ContractEditRequest) {
   return {
-    ...payload,
-    contract: stringifyContract(payload.contract),
+    sellerId: toNumericId(payload.sellerId),
+    buyerId: toNumericId(payload.buyerId),
+    roomId: payload.roomId,
+    deviceInfo: payload.deviceInfo,
+    editjson: payload.editjson,
   };
 }
 
@@ -253,7 +256,7 @@ function normalizeSummaryResponse(
   raw: ContractSummaryResponse & { success?: boolean; summary?: string | { final_summary: string } }
 ): ContractSummaryResponse {
   console.log('[contractsApi.getSummary] Raw response:', JSON.stringify(raw, null, 2));
-  
+
   // summary가 문자열인 경우 (하위 호환성) 또는 객체인 경우 처리
   let normalizedSummary: { final_summary: string };
   if (typeof raw.summary === 'string') {
@@ -263,7 +266,7 @@ function normalizeSummaryResponse(
   } else {
     normalizedSummary = { final_summary: '' };
   }
-  
+
   const normalized: ContractSummaryResponse = {
     isSuccess: raw.isSuccess ?? raw.success ?? false,
     summary: normalizedSummary,
@@ -271,8 +274,31 @@ function normalizeSummaryResponse(
   };
 
   console.log('[contractsApi.getSummary] Normalized response:', JSON.stringify(normalized, null, 2));
-  
+
   return normalized;
+}
+
+function normalizeSignResponse(
+  raw: ContractSignResponse & { success?: boolean }
+): ContractSignResponse {
+  return {
+    isSuccess: raw.isSuccess ?? raw.success ?? false,
+    data: raw.data,
+    bothSign: raw.bothSign,
+    message: raw.message,
+  };
+}
+
+function normalizeSendResponse(
+  raw: ContractSendResponse & { success?: boolean }
+): ContractSendResponse {
+  return {
+    isSuccess: raw.isSuccess ?? raw.success ?? false,
+    data: raw.data,
+    summary: raw.summary,
+    message: raw.message,
+    bothSign: raw.bothSign,
+  };
 }
 
 export function createContractsApi(
@@ -294,11 +320,11 @@ export function createContractsApi(
       return normalizeCreateResponse(rawResponse);
     },
 
-    sign(payload) {
-      return client.post<ContractSignResponse>(
-        '/api/contracts/sign',
-        buildSignPayload(payload)
-      );
+    async sign(payload) {
+      const rawResponse = await client.post<
+        ContractSignResponse & { success?: boolean }
+      >('/api/contracts/sign', buildSignPayload(payload));
+      return normalizeSignResponse(rawResponse);
     },
 
     search(payload) {
@@ -322,11 +348,11 @@ export function createContractsApi(
       );
     },
 
-    send(payload) {
-      return client.post<ContractSendResponse>(
-        '/api/contracts/send',
-        buildSearchLikePayload(payload)
-      );
+    async send(payload) {
+      const rawResponse = await client.post<
+        ContractSendResponse & { success?: boolean }
+      >('/api/contracts/send', buildSearchLikePayload(payload));
+      return normalizeSendResponse(rawResponse);
     },
 
     detail(params) {

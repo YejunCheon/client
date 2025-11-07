@@ -217,9 +217,16 @@ export function createMockContractsApi(): ContractsApi {
         contract.updatedAt = new Date().toISOString();
       }
 
+      let parsedData = {};
+      try {
+        parsedData = JSON.parse(payload.editjson);
+      } catch {
+        parsedData = {};
+      }
+
       return respond({
         isSuccess: true,
-        data: payload.contract ?? {},
+        data: parsedData,
         summary: contract?.summary ?? '수정된 계약서 요약입니다.',
       });
     },
